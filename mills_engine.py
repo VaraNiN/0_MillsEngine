@@ -1,5 +1,6 @@
-import numpy as np
 import torch
+import re
+from typing import List
 from colorama import Fore as cf, Style as cs
 
 board_state = torch.zeros((3,3,3), dtype=int)
@@ -37,7 +38,7 @@ def check_position(state: torch.Tensor) -> bool:
     return True
 
 
-def show_position(state : torch.Tensor) -> bool:
+def show_position(state : torch.Tensor) -> None:
     validity = check_position(state)
     if validity:
         board_template = """
@@ -59,6 +60,31 @@ def show_position(state : torch.Tensor) -> bool:
         
         print(board_template.format(*input))
 
+def next_move(state: torch.Tensor, colour: int) -> None:
+    while True:
+        move = input("Please provide the next move in the format: ring x y: ")
+        if re.match(r'^\d \d \d$', move):
+            coords = tuple(map(int, move.split()))
+            if all(n in {0, 1, 2} for n in coords):
+                if not (coords[1] == 1 and coords[2] == 1):
+                    if state[coords] == 0:
+                        break
+                    else:
+                        print("Invalid values. There is already a stone there.")
+                else:
+                    print("Invalid values. x and y cannot both be 1")
+            else:
+                print("Invalid values. All have to be 0, 1 or 2")
+        else:
+            print("Invalid format.")
+
+    state[coords] = colour
+
+
 board_state[2, 1, 2] = 1
+
+show_position(board_state)
+
+next_move(board_state, 1)
 
 show_position(board_state)
