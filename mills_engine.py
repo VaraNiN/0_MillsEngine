@@ -6,6 +6,20 @@ from colorama import Fore as cf, Style as cs
 board_state = torch.zeros((3,3,3), dtype=int)
 num_neighbors = torch.zeros((3,3,3), dtype=int)
 
+neighbors_mult = torch.zeros((3,3,3), dtype=float)
+
+board_value = torch.Tensor([
+    [[1.0, 1.2, 1.0], 
+     [1.2, 0.0, 1.2], 
+     [1.0, 1.2, 1.0]],
+    [[1.0, 1.5, 1.0], 
+     [1.5, 0.0, 1.5], 
+     [1.0, 1.5, 1.0]],
+    [[1.0, 1.2, 1.0], 
+     [1.2, 0.0, 1.2], 
+     [1.0, 1.2, 1.0]]
+])
+
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
@@ -38,29 +52,32 @@ def check_position(state: torch.Tensor) -> bool:
     return True
 
 
-def show_position(state : torch.Tensor) -> None:
-    validity = check_position(state)
-    if validity:
-        board_template = """
-            {0}-----------{3}-----------{6}
-            |           |           |
-            |   {9}-------{12}-------{15}   |
-            |   |       |       |   |
-            |   |   {18}---{21}---{24}   |   |
-            |   |   |       |   |   |
-            {1}---{10}---{19}       {25}---{16}---{7}
-            |   |   |       |   |   |
-            |   |   {20}---{23}---{26}   |   |
-            |   |       |       |   |
-            |   {11}-------{14}-------{17}   |
-            |           |           |
-            {2}-----------{5}-----------{8}
-            """
-        input = state.flatten().tolist()
+def show_position(state : torch.Tensor, check_validity : bool = True) -> None:
+    if check_validity:
+        if not check_position(state):
+            return
         
-        print(board_template.format(*input))
+    board_template = """
+        {0}-----------{3}-----------{6}
+        |           |           |
+        |   {9}-------{12}-------{15}   |
+        |   |       |       |   |
+        |   |   {18}---{21}---{24}   |   |
+        |   |   |       |   |   |
+        {1}---{10}---{19}       {25}---{16}---{7}
+        |   |   |       |   |   |
+        |   |   {20}---{23}---{26}   |   |
+        |   |       |       |   |
+        |   {11}-------{14}-------{17}   |
+        |           |           |
+        {2}-----------{5}-----------{8}
+        """
+    
+    input = state.flatten().tolist()
+    
+    print(board_template.format(*input))
 
-def next_move(state: torch.Tensor, colour: int) -> None:
+def input_next_move(state: torch.Tensor, colour: int) -> None:
     while True:
         move = input("Please provide the next move in the format: ring x y: ")
         if re.match(r'^\d \d \d$', move):
@@ -83,8 +100,11 @@ def next_move(state: torch.Tensor, colour: int) -> None:
 
 board_state[2, 1, 2] = 1
 
+show_position(board_value, check_validity=False)
+exit()
+
 show_position(board_state)
 
-next_move(board_state, 1)
+input_next_move(board_state, 1)
 
 show_position(board_state)
