@@ -237,7 +237,8 @@ def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
     ring, x, y = move
 
     if state[ring - 1, x, y] == colour and state[ring - 2, x, y] == colour:
-        return True
+        if x == 1 or y == 1:
+            return True
     elif state[ring, x - 1, y] == colour and state[ring, x - 2, y] == colour:
         return True
     elif state[ring, x, y - 1] == colour and state[ring, x, y - 2] == colour:
@@ -254,9 +255,11 @@ def check_possible_mills(state : torch.tensor, colour : int) -> List:
             for k in range(3):
                 if state[i, j, k] == colour:
                     if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
-                        possible_mills.append(((i - 2) % 3, j, k))
+                        if j == 1 or k == 1:
+                            possible_mills.append(((i - 2) % 3, j, k))
                     if state[i - 1, j, k] == 0 and state[i - 2, j, k] == colour:
-                        possible_mills.append(((i - 1) % 3, j, k))
+                        if j == 1 or k == 1:
+                            possible_mills.append(((i - 1) % 3, j, k))
 
                     if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
                         possible_mills.append((i, (j - 2) % 3, k))
