@@ -8,7 +8,6 @@ from colorama import Fore as cf, Style as cs
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
-OPEN_MILL_WEIGHT            = 0.2
 LEGAL_MOVES_WEIGHT          = 0.3
 
 #TODO: Implement list of all past board states and the ability to go back to the previous board state
@@ -306,31 +305,6 @@ def check_mill(state: torch.tensor, move: tuple[int]) -> bool:
         return True
     
     return False
-    
-@timer_wrap
-def check_possible_mills(state: torch.tensor, colour: int) -> List:
-    possible_mills = set()
-    positions = torch.nonzero(state == colour).tolist()
-    
-    for i, j, k in positions:
-        if j == 1 or k == 1:
-            if state[i - 1, j, k] == colour:
-                if state[i - 2, j, k] == 0:
-                    possible_mills.add(((i - 2) % 3, j, k))
-                elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
-                    possible_mills.add(((i - 1) % 3, j, k))
-            if state[i, j - 1, k] == colour:
-                if state[i, j - 2, k] == 0:
-                    possible_mills.add((i, (j - 2) % 3, k))
-                elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
-                    possible_mills.add((i, (j - 1) % 3, k))
-            if state[i, j, k - 1] == colour:
-                if state[i, j, k - 2] == 0:
-                    possible_mills.add((i, j, (k - 2) % 3))
-                elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
-                    possible_mills.add((i, j, (k - 1) % 3))
-    
-    return list(possible_mills)
 
 @timer_wrap
 def legal_moves_early(state : torch.tensor) -> List:
@@ -416,7 +390,6 @@ def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : 
 def evaluate_position(state : torch.tensor, 
                         board_value : torch.tensor = board_value, 
                         is_early_game : bool = False, 
-                        open_mill_weight : float = OPEN_MILL_WEIGHT, 
                         legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
 
     free_spaces = get_neighbor_free(state)
@@ -427,12 +400,8 @@ def evaluate_position(state : torch.tensor,
     legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
     legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
-    open_mill_white = len(check_possible_mills(state, 1))
-    open_mill_black = len(check_possible_mills(state, -1))
-
-
     piece_value = state * board_value
-    return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black) + open_mill_weight * (open_mill_white - open_mill_black)
+    return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black)
 
 @timer_wrap
 def get_children_early(state : torch.tensor, colour : int):
@@ -562,27 +531,3 @@ except KeyboardInterrupt:
     pass
 
 TIMER.print_report()
-
-exit()
-
-
-
-###################
-###################
-##### OLD CODE ####
-
-
-ACTUAL_FREE_NEIGH_MULTI     = 0.1
-
-def get_neighbor_weights(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
-    """ Returns weighting based on free neighboring cells"""
-    neigh_count = torch.ones(state.size(), dtype=float)
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                neigh_count[i, j ,k] += free_weight * len(neigh_map[i][j][k])
-                for neigh in neigh_map[i][j][k]:
-                    if state[neigh] != 0:
-                        neigh_count[i, j ,k] -= free_weight
-
-    return neigh_count
