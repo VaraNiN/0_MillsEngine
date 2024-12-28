@@ -134,6 +134,12 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
     print(board_template.format(*input))
 
 @timer_wrap
+def count_stones(state : torch.tensor) -> List[int]:
+    white = int(torch.sum(state == 1).item())
+    black = int(torch.sum(state == -1).item())
+    return [white, black]
+
+@timer_wrap
 def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
     while True:
         move = input("Where should a stone be added? (Format: ring x y): ")
@@ -294,17 +300,18 @@ def check_mill(state: torch.tensor, move: tuple[int]) -> bool:
     if colour not in {1, -1}:
         red("Something went wrong while checking if a mill occurred. state[move] = 0")
         exit()
-    
+        
     ring, x, y = move
 
-    if (x == 1 or y == 1) and state[ring - 1, x, y] == colour and state[ring - 2, x, y] == colour:
+    if state[ring, x, y - 1] == colour and state[ring, x, y - 2] == colour:
         return True
     if state[ring, x - 1, y] == colour and state[ring, x - 2, y] == colour:
         return True
-    if state[ring, x, y - 1] == colour and state[ring, x, y - 2] == colour:
+    if (x == 1 or y == 1) and state[ring - 1, x, y] == colour and state[ring - 2, x, y] == colour:
         return True
     
     return False
+    
 
 @timer_wrap
 def legal_moves_early(state : torch.tensor) -> List:
@@ -506,11 +513,18 @@ else:
     COMPUTER_MAX = True
 
 
-early_count = 0
+white_placed = 0
+black_placed = 0
 try:
-    while early_count < 19:
+    while white_placed + black_placed < 18:
         show_position(board_state)
         if player_turn:
+            if PLAYER_COLOUR == 1:
+                white_placed += 1
+                print("Please place white stone %i / 9" %white_placed)
+            else:
+                black_placed += 1
+                print("Please place black stone %i / 9" %black_placed)
             move = input_next_add(board_state, PLAYER_COLOUR)
             if check_mill(board_state, move):
                 show_position(board_state)
@@ -518,6 +532,12 @@ try:
             board_state_history.append([np.nan, board_state])
             player_turn = False
         else:
+            if PLAYER_COLOUR == 1:
+                black_placed += 1
+                print("Computer places black stone %i / 9" %black_placed)
+            else:
+                white_placed += 1
+                print("Computer places white stone %i / 9" %white_placed)
             depth = 0
             approx_calls = 1
             while approx_calls < MAX_APPROX_EVAL_CALLS:
@@ -526,7 +546,6 @@ try:
             eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
             board_state_history.append([eval, board_state])
             player_turn = True
-        early_count += 1
 except KeyboardInterrupt:
     pass
 
