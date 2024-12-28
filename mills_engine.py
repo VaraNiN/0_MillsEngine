@@ -4,7 +4,6 @@ from typing import List
 from colorama import Fore as cf, Style as cs
 
 board_state = torch.zeros((3,3,3), dtype=int)
-num_neighbors = torch.zeros((3,3,3), dtype=int)
 
 neighbors_mult = torch.zeros((3,3,3), dtype=float)
 
@@ -52,7 +51,7 @@ def check_position(state: torch.Tensor) -> bool:
     return True
 
 
-def show_position(state : torch.Tensor, check_validity : bool = True) -> None:
+def show_position(state : torch.Tensor, check_validity : bool = True, replace_symbols : bool = True) -> None:
     if check_validity:
         if not check_position(state):
             return
@@ -74,6 +73,10 @@ def show_position(state : torch.Tensor, check_validity : bool = True) -> None:
         """
     
     input = state.flatten().tolist()
+    if replace_symbols:
+        input = ["X" if x ==  1 else x for x in input]
+        input = ["O" if x == -1 else x for x in input]
+        input = [" "  if x ==  0 else x for x in input]
     
     print(board_template.format(*input))
 
@@ -97,7 +100,7 @@ def input_next_move(state: torch.Tensor, colour: int) -> None:
 
     state[coords] = colour
 
-def initialize_neighbour_map() -> List[List]:
+def initialize_neighbour_map() -> List:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
 
     for i in range(3): # Corners
@@ -136,21 +139,27 @@ def initialize_neighbour_map() -> List[List]:
 
 neighbors_map = initialize_neighbour_map()
 
-def update_neighbors(state : torch.Tensor) -> torch.Tensor:
-    return
+def get_neighbors(state : torch.Tensor, neigh_map : List = neighbors_map) -> torch.Tensor:
+    """ Returns number of free neighbouring cells """
+    if check_position(state):
+        neigh_count = torch.zeros(state.size(), dtype=int)
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    neigh_count[i, j ,k] = len(neigh_map[i][j][k])
+                    for neigh in neigh_map[i][j][k]:
+                        if state[neigh] != 0:
+                            neigh_count[i, j ,k] -= 1
+
+        return neigh_count
+    else:
+        exit()
 
 
 
 board_state[2, 1, 2] = 1
-
-print(type(neighbors_map[2][1][0]))
-print(neighbors_map)
-exit()
+board_state[1, 2, 2] = -1
 
 show_position(board_state)
-
-exit()
-
-input_next_move(board_state, 1)
-
-show_position(board_state)
+free_neighbours = get_neighbors(board_state)
+show_position(free_neighbours, check_validity=False, replace_symbols=False)
