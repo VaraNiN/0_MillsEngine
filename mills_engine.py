@@ -10,6 +10,7 @@ LEGAL_MOVES_WEIGHT          = 0.3
 
 #TODO: Implement list of all past board states and the ability to go back to the previous board state
 #TODO: Add Openingbook where the program always sets in the four crossings first
+#TODO: Optimize away all the triple for loops
 
 
 
@@ -265,26 +266,36 @@ def check_possible_mills(state : torch.tensor, colour : int) -> List:
 
 def legal_moves_early(state : torch.tensor) -> List:
     moves = []
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                if not (j == 1 and k == 1):
-                    if state[i, j, k] == 0:
-                        moves.append((i, j, k))
+    pieces = torch.nonzero(state == 0).tolist()
+    for index in pieces:
+        if not (index[1] == 1 and index[2] == 1):
+            moves.append(tuple(index))
     return moves
 
 def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
     moves = []
+
     if free_spaces is None:
         free_spaces = get_neighbor_free(state)
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                if not (j == 1 and k == 1):
-                    if state[i, j, k] == colour:
-                        for free in free_spaces[i][j][k]:
-                            moves.append([(i, j, k), free])
+
+    pieces = torch.nonzero(state == colour).tolist()
+    for index in pieces:
+        i, j, k = index
+        if not (j == 1 and k == 1):
+            for free in free_spaces[i][j][k]:
+                moves.append([(i, j, k), free])
     return moves
+
+def legal_moves_end(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
+    moves = []
+    pieces = torch.nonzero(state == colour).tolist()
+    empty = legal_moves_early(state)
+    for index in pieces:
+        if not (index[1] == 1 and index[2] == 1):
+            for emp in empty:
+                moves.append([tuple(index), tuple(emp)])
+    return moves
+
 
 def removeable_pieces(state : torch.tensor, colour : int) -> List:
     pieces = torch.nonzero(state == -colour).tolist()
@@ -369,17 +380,22 @@ board_state[2, 1, 2] = 1
 board_state[1, 1, 2] = 1
 board_state[1, 2, 1] = 1
 board_state[2, 2, 0] = 1
-board_state[1, 2, 0] = -1
-board_state[0, 0, 1] = -1
-board_state[1, 0, 2] = -1
 board_state[2, 2, 2] = 1
-board_state[1, 2, 2] = -1
 board_state[0, 1, 2] = 1
 board_state[2, 0, 2] = 1
-board_state[1, 0, 1] = -1
+
 board_state[1, 0, 0] = -1
+board_state[1, 0, 1] = -1
+board_state[1, 0, 2] = -1
+#board_state[1, 2, 0] = -1
+#board_state[0, 0, 1] = -1
+#board_state[1, 2, 2] = -1
 
 show_position(board_state)
+
+print(legal_moves_mid(board_state, 1))
+
+exit()
 
 board_state = new_board_state_mid(board_state, [tuple([1, 2, 1]), tuple([2, 2, 1])], 1)
 
