@@ -3,6 +3,7 @@ import re
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
 
+CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 OPEN_MILL_WEIGHT            = 0.2
@@ -195,17 +196,19 @@ def initialize_neighbour_map() -> List:
 
 neighbors_map = initialize_neighbour_map()
 
-def initialize_boardvalues(big_cross : int = FOUR_NEIGH_POSITIONS_MULTI, little_cross : int = THREE_NEIGH_POSITIONS_MULTI) -> torch.tensor:
+def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI, 
+                            little_cross : float = THREE_NEIGH_POSITIONS_MULTI, 
+                            corner : float = CORNER_POSITION_MULTI) -> torch.tensor:
     board_value = torch.tensor([
-        [[1.0, little_cross, 1.0], 
-        [little_cross, 0.0, little_cross], 
-        [1.0, little_cross, 1.0]],
-        [[1.0, big_cross, 1.0], 
-        [big_cross, 0.0, big_cross], 
-        [1.0, big_cross, 1.0]],
-        [[1.0, little_cross, 1.0], 
-        [little_cross, 0.0, little_cross], 
-        [1.0, little_cross, 1.0]]
+        [[corner, little_cross, corner], 
+         [little_cross, 0.0, little_cross], 
+         [corner, little_cross, corner]],
+        [[corner, big_cross, corner], 
+         [big_cross, 0.0, big_cross], 
+         [corner, big_cross, corner]],
+        [[corner, little_cross, corner], 
+         [little_cross, 0.0, little_cross], 
+         [corner, little_cross, corner]]
     ])
     return board_value
 
@@ -312,29 +315,31 @@ def removeable_pieces(state : torch.tensor, colour : int) -> List:
 
 def new_board_state_early(state : torch.tensor, move : tuple[int], colour : int) -> List:
     new_states = []
-    state[move] = colour
-    if check_mill(state, move):
-        for index in removeable_pieces(state, colour):
-            dummy_state = torch.clone(state)
+    original_state = torch.clone(state)
+    original_state[move] = colour
+    if check_mill(original_state, move):
+        for index in removeable_pieces(original_state, colour):
+            dummy_state = torch.clone(original_state)
             dummy_state[tuple(index)] = 0
             new_states.append(dummy_state)
     else:
-        new_states.append(state)
+        new_states.append(original_state)
     return new_states
 
 def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : int) -> List:
     new_states = []
+    original_state = torch.clone(state)
     move_from = move[0]
     move_to = move[1]
-    state[move_from] = 0
-    state[move_to] = colour
-    if check_mill(state, move_to):
-        for index in removeable_pieces(state, colour):
-            dummy_state = torch.clone(state)
+    original_state[move_from] = 0
+    original_state[move_to] = colour
+    if check_mill(original_state, move_to):
+        for index in removeable_pieces(original_state, colour):
+            dummy_state = torch.clone(original_state)
             dummy_state[tuple(index)] = 0
             new_states.append(dummy_state)
     else:
-        new_states.append(state)
+        new_states.append(original_state)
     return new_states
         
 
@@ -344,33 +349,83 @@ def evaluate_position(state : torch.tensor,
                         open_mill_weight : float = OPEN_MILL_WEIGHT, 
                         legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
 
-    num_white_stones = torch.sum(state == 1)
-    num_black_stones = abs(torch.sum(state == -1))
-
     free_spaces = get_neighbor_free(state)
+    terminal = is_terminal_node(state, is_early_game, free_spaces)
+    if abs(terminal) == 1:
+        return terminal * 9001
+
     legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
     legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
     open_mill_white = len(check_possible_mills(state, 1))
     open_mill_black = len(check_possible_mills(state, -1))
 
-    # Check for win
-    if not is_early_game:
-        if num_white_stones < 3:
-            return -9001 # Black has won
-        if num_black_stones < 3:
-            return 9001 # White has won
-
-    if num_white_stones > 3:
-        if legal_moves_white == 0:
-            return -9001 # Black has won
-    if num_black_stones > 3:
-        if legal_moves_black == 0:
-            return 9001 # White has won
 
     piece_value = state * board_value
     return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black) + open_mill_weight * (open_mill_white - open_mill_black)
 
+def get_children_early(state : torch.tensor, colour : int):
+    children = []
+    moves = legal_moves_early(state)
+    for i, move in enumerate(moves):
+        children += new_board_state_early(state, move, colour)
+    return children
+
+def is_terminal_node(state : torch.tensor, 
+                        is_early_game : bool = False,
+                        free_spaces : Any  = None) -> int:
+
+    num_white_stones = torch.sum(state == 1)
+    num_black_stones = abs(torch.sum(state == -1))
+    if free_spaces is None:
+        free_spaces = get_neighbor_free(state)
+    legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
+    legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
+
+    # Check for win
+    if not is_early_game:
+        if num_white_stones < 3:
+            return -1 # Black has won
+        if num_black_stones < 3:
+            return 1 # White has won
+
+    if num_white_stones > 3:
+        if legal_moves_white == 0:
+            return -1 # Black has won
+    if num_black_stones > 3:
+        if legal_moves_black == 0:
+            return 1 # White has won
+    
+    return 0 # Still undecided
+
+def minimax_early(node, depth, alpha, beta, maximizingPlayer):
+    if depth == 0 or abs(is_terminal_node(node, is_early_game = True))==1:
+        return evaluate_position(node, is_early_game = True), node
+
+    best_node = None
+
+    if maximizingPlayer:
+        maxEval = float('-inf')
+        for child in get_children(node):
+            eval, _ = minimax(child, depth - 1, alpha, beta, False)
+            if eval > maxEval:
+                maxEval = eval
+                best_node = child
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break  # Beta cut-off
+        return maxEval, best_node
+    else:
+        minEval = float('inf')
+        for child in get_children(node):
+            eval, _ = minimax(child, depth - 1, alpha, beta, True)
+            if eval < minEval:
+                minEval = eval
+                best_node = child
+            beta = min(beta, eval)
+            if beta <= alpha:
+                break  # Alpha cut-off
+        return minEval, best_node
 
 
 board_state = torch.zeros((3,3,3), dtype=int)
@@ -392,6 +447,15 @@ board_state[1, 0, 2] = -1
 #board_state[1, 2, 2] = -1
 
 show_position(board_state)
+
+#print(get_children_early(board_state, 1))
+
+
+for i in range(len(get_children_early(board_state, 1))):
+    print(i)
+    show_position(get_children_early(board_state, 1)[i])
+
+exit()
 
 print(legal_moves_mid(board_state, 1))
 
