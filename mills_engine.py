@@ -268,6 +268,31 @@ def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
         return False
     
 
+def check_possible_mills(state : torch.tensor, colour : int) -> List:
+    #TODO optimize this
+    possible_mills = []
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                if state[i, j, k] == colour:
+                    if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
+                        possible_mills.append(((i - 2) % 3, j, k))
+                    if state[i - 1, j, k] == 0 and state[i - 2, j, k] == colour:
+                        possible_mills.append(((i - 1) % 3, j, k))
+
+                    if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
+                        possible_mills.append((i, (j - 2) % 3, k))
+                    if state[i, j - 1, k] == 0 and state[i, j - 2, k] == colour:
+                        possible_mills.append((i, (j - 1) % 3, k))
+
+                    if state[i, j, k - 1] == colour and state[i, j, k - 2] == 0:
+                        possible_mills.append((i, j, (k - 2) % 3))
+                    if state[i, j, k - 1] == 0 and state[i, j, k - 2] == colour:
+                        possible_mills.append((i, j, (k - 1) % 3))
+    return list(dict.fromkeys(possible_mills))
+
+
+
 def legal_moves_early(state : torch.tensor) -> List:
     moves = []
     for i in range(3):
@@ -284,7 +309,9 @@ def legal_moves_early(state : torch.tensor) -> List:
 
 board_state[2, 1, 2] = 1
 board_state[1, 1, 2] = 1
-
+board_state[2, 2, 0] = 1
+board_state[1, 2, 0] = -1
+board_state[0, 0, 1] = -1
 board_state[1, 0, 2] = -1
 board_state[2, 2, 2] = 1
 board_state[1, 2, 2] = -1
@@ -295,8 +322,7 @@ board_state[1, 0, 0] = -1
 
 show_position(board_state)
 
-print(legal_moves_early(board_state))
-print(len(legal_moves_early(board_state)))
+print(check_possible_mills(board_state, colour=-1))
 
 exit()
 
