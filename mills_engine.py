@@ -1,6 +1,6 @@
 import torch
 import re
-from typing import List
+from typing import List, Any
 from colorama import Fore as cf, Style as cs
 
 board_state = torch.zeros((3,3,3), dtype=int)
@@ -9,8 +9,8 @@ neighbors_mult = torch.zeros((3,3,3), dtype=float)
 
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
-ACTUAL_FREE_NEIGH_MULTI     = 0.1
 OPEN_MILL_WEIGHT            = 0.2
+LEGAL_MOVES_WEIGHT          = 0.3
 
 #TODO: Implement list of all past board states and the ability to go back to the previous board state
 #TODO: Add Openingbook where the program always sets in the four crossings first
@@ -214,20 +214,6 @@ def initialize_boardvalues(big_cross : int = FOUR_NEIGH_POSITIONS_MULTI, little_
 
 board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, little_cross=THREE_NEIGH_POSITIONS_MULTI)
 
-
-def get_neighbor_weights(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
-    """ Returns weighting based on free neighboring cells"""
-    neigh_count = torch.ones(state.size(), dtype=float)
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                neigh_count[i, j ,k] += free_weight * len(neigh_map[i][j][k])
-                for neigh in neigh_map[i][j][k]:
-                    if state[neigh] != 0:
-                        neigh_count[i, j ,k] -= free_weight
-
-    return neigh_count
-
 def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) -> List:
     """ Returns list of free neighboring cells for each cell"""
     free_neighs = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -239,20 +225,6 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
                         free_neighs[i][j][k].append(neigh)
 
     return free_neighs
-
-def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map, is_early_game : bool = False, open_mill_weight : float = OPEN_MILL_WEIGHT) -> float:
-    if not is_early_game:
-        if torch.sum(state == 1) < 3:
-            return -9001 # Black has won
-        
-        if abs(torch.sum(state == -1)) < 3:
-            return 9001 # White has won
-    
-    free_neighbours = get_neighbor_weights(board_state)    
-    piece_value = state * board_value * free_neighbours
-    open_mill_white = len(check_possible_mills(board_state, 1))
-    open_mill_black = len(check_possible_mills(board_state, -1))
-    return float(piece_value.sum()) + open_mill_weight * (open_mill_white - open_mill_black)
 
 def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
     colour = state[move]
@@ -295,7 +267,6 @@ def check_possible_mills(state : torch.tensor, colour : int) -> List:
     return list(dict.fromkeys(possible_mills))
 
 
-
 def legal_moves_early(state : torch.tensor) -> List:
     moves = []
     for i in range(3):
@@ -305,6 +276,52 @@ def legal_moves_early(state : torch.tensor) -> List:
                     if state[i, j, k] == 0:
                         moves.append((i, j, k))
     return moves
+
+def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
+    moves = []
+    if free_spaces is None:
+        free_spaces = get_neighbor_free(state)
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                if not (j == 1 and k == 1):
+                    if state[i, j, k] == colour:
+                        for free in free_spaces[i][j][k]:
+                            moves.append([(i, j, k), free])
+    return moves
+
+def evaluate_position(state : torch.tensor, 
+                        board_value : torch.tensor = board_value, 
+                        is_early_game : bool = False, 
+                        open_mill_weight : float = OPEN_MILL_WEIGHT, 
+                        legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
+
+    num_white_stones = torch.sum(state == 1)
+    num_black_stones = abs(torch.sum(state == -1))
+
+    free_spaces = get_neighbor_free(state)
+    legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
+    legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
+
+    open_mill_white = len(check_possible_mills(board_state, 1))
+    open_mill_black = len(check_possible_mills(board_state, -1))
+
+    # Check for win
+    if not is_early_game:
+        if num_white_stones < 3:
+            return -9001 # Black has won
+        if num_black_stones < 3:
+            return 9001 # White has won
+
+    if num_white_stones > 3:
+        if legal_moves_white == 0:
+            return -9001 # Black has won
+    if num_black_stones > 3:
+        if legal_moves_black == 0:
+            return 9001 # White has won
+
+    piece_value = state * board_value
+    return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black) + open_mill_weight * (open_mill_white - open_mill_black)
 
 
 
@@ -325,7 +342,7 @@ board_state[1, 0, 0] = -1
 
 show_position(board_state)
 
-print(check_possible_mills(board_state, colour=-1))
+print(legal_moves_mid(board_state, 1))
 
 print(evaluate_position(board_state))
 
@@ -334,3 +351,25 @@ exit()
 input_next_move(board_state, colour=1, is_late_game=True)
 
 show_position(board_state)
+
+
+
+###################
+###################
+##### OLD CODE ####
+
+
+ACTUAL_FREE_NEIGH_MULTI     = 0.1
+
+def get_neighbor_weights(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
+    """ Returns weighting based on free neighboring cells"""
+    neigh_count = torch.ones(state.size(), dtype=float)
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                neigh_count[i, j ,k] += free_weight * len(neigh_map[i][j][k])
+                for neigh in neigh_map[i][j][k]:
+                    if state[neigh] != 0:
+                        neigh_count[i, j ,k] -= free_weight
+
+    return neigh_count
