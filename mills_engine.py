@@ -157,19 +157,16 @@ board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, littl
 
 def get_neighbors(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
     """ Returns number of free neighbouring cells """
-    if check_position(state):
-        neigh_count = torch.ones(state.size(), dtype=float)
-        for i in range(3):
-            for j in range(3):
-                for k in range(3):
-                    neigh_count[i, j ,k] += free_weight * len(neigh_map[i][j][k])
-                    for neigh in neigh_map[i][j][k]:
-                        if state[neigh] != 0:
-                            neigh_count[i, j ,k] -= free_weight
+    neigh_count = torch.ones(state.size(), dtype=float)
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                neigh_count[i, j ,k] += free_weight * len(neigh_map[i][j][k])
+                for neigh in neigh_map[i][j][k]:
+                    if state[neigh] != 0:
+                        neigh_count[i, j ,k] -= free_weight
 
-        return neigh_count
-    else:
-        exit()
+    return neigh_count
 
 def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map) -> float:
     free_neighbours = get_neighbors(board_state)    
@@ -178,13 +175,34 @@ def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_v
     show_position(piece_value, check_validity=False, replace_symbols=False)
     return float(piece_value.sum())
 
+def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
+    colour = state[move]
+    if colour != 1 and colour != -1:
+        red("Something went wrong while checking if a mill occured. state[move] = 0")
+        exit()
+    ring, x, y = move
+
+    if state[ring - 1, x, y] == colour and state[ring - 2, x, y] == colour:
+        return True
+    elif state[ring, x - 1, y] == colour and state[ring, x - 2, y] == colour:
+        return True
+    elif state[ring, x, y - 1] == colour and state[ring, x, y - 2] == colour:
+        return True
+    else:
+        return False
+
 
 
 board_state[2, 1, 2] = 1
+board_state[1, 1, 2] = 1
+
+board_state[1, 0, 2] = -1
+board_state[2, 2, 2] = 1
 board_state[1, 2, 2] = -1
+board_state[0, 1, 2] = 1
+board_state[2, 0, 2] = 1
+board_state[1, 0, 1] = -1
+board_state[1, 0, 0] = -1
 
 show_position(board_state)
-free_neighbours = get_neighbors(board_state)
-show_position(free_neighbours, check_validity=False, replace_symbols=False)
-
-print(evaluate_position(board_state))
+print(check_mill(board_state, (1, 2, 2)))
