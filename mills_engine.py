@@ -3,10 +3,6 @@ import re
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
 
-board_state = torch.zeros((3,3,3), dtype=int)
-
-neighbors_mult = torch.zeros((3,3,3), dtype=float)
-
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 OPEN_MILL_WEIGHT            = 0.2
@@ -303,8 +299,8 @@ def evaluate_position(state : torch.tensor,
     legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
     legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
-    open_mill_white = len(check_possible_mills(board_state, 1))
-    open_mill_black = len(check_possible_mills(board_state, -1))
+    open_mill_white = len(check_possible_mills(state, 1))
+    open_mill_black = len(check_possible_mills(state, -1))
 
     # Check for win
     if not is_early_game:
@@ -325,6 +321,7 @@ def evaluate_position(state : torch.tensor,
 
 
 
+board_state = torch.zeros((3,3,3), dtype=int)
 
 
 board_state[2, 1, 2] = 1
@@ -342,7 +339,7 @@ board_state[1, 0, 0] = -1
 
 show_position(board_state)
 
-print(legal_moves_mid(board_state, 1))
+print(legal_moves_mid(board_state, -1))
 
 print(evaluate_position(board_state))
 
