@@ -286,6 +286,25 @@ def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None
                             moves.append([(i, j, k), free])
     return moves
 
+def removeable_pieces(state : torch.tensor, colour : int) -> List:
+    pieces = torch.nonzero(state == -colour).tolist()
+    i = 0
+    while i < len(pieces):
+        if check_mill(state, tuple(pieces[i])):
+            pieces.pop(i)
+        else:
+            i += 1
+    if len(pieces) > 0:
+        return pieces
+    else:
+        return torch.nonzero(state == -colour).tolist()
+
+def new_board_state_early(state : torch.tensor, move : Any, colour : int) -> Any:
+    state[move] = colour
+    if check_mill(state, move):
+        pass
+
+
 def evaluate_position(state : torch.tensor, 
                         board_value : torch.tensor = board_value, 
                         is_early_game : bool = False, 
@@ -338,6 +357,10 @@ board_state[1, 0, 1] = -1
 board_state[1, 0, 0] = -1
 
 show_position(board_state)
+
+print(removeable_pieces(board_state, -1))
+
+exit()
 
 print(legal_moves_mid(board_state, -1))
 
