@@ -10,6 +10,7 @@ neighbors_mult = torch.zeros((3,3,3), dtype=float)
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 ACTUAL_FREE_NEIGH_MULTI     = 0.1
+OPEN_MILL_WEIGHT            = 0.2
 
 #TODO: Implement list of all past board states and the ability to go back to the previous board state
 #TODO: Add Openingbook where the program always sets in the four crossings first
@@ -239,7 +240,7 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
 
     return free_neighs
 
-def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map, is_early_game : bool = False) -> float:
+def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map, is_early_game : bool = False, open_mill_weight : float = OPEN_MILL_WEIGHT) -> float:
     if not is_early_game:
         if torch.sum(state == 1) < 3:
             return -9001 # Black has won
@@ -249,7 +250,9 @@ def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_v
     
     free_neighbours = get_neighbor_weights(board_state)    
     piece_value = state * board_value * free_neighbours
-    return float(piece_value.sum())
+    open_mill_white = len(check_possible_mills(board_state, 1))
+    open_mill_black = len(check_possible_mills(board_state, -1))
+    return float(piece_value.sum()) + open_mill_weight * (open_mill_white - open_mill_black)
 
 def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
     colour = state[move]
@@ -323,6 +326,8 @@ board_state[1, 0, 0] = -1
 show_position(board_state)
 
 print(check_possible_mills(board_state, colour=-1))
+
+print(evaluate_position(board_state))
 
 exit()
 
