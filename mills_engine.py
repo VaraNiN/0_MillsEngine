@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import re
+import time
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
 
@@ -17,11 +18,64 @@ LEGAL_MOVES_WEIGHT          = 0.3
 
 
 
+### This timer class is based on that of Gertjan van den Burg
+### See their article at https://gertjanvandenburg.com/blog/timing_decorator/
+class Timer(object):
+    def __init__(self):
+        self.timers = {}
+        self.call_counts = {}
+        self._stack = []
+        self.start = None
+
+    def add_to_timer(self, name, duration):
+        if name not in self.timers:
+            self.timers[name] = 0
+            self.call_counts[name] = 0
+        self.timers[name] += duration
+        self.call_counts[name] += 1
+
+    def stack(self, name):
+        # stop running timer, start new timer, add name to stack
+        if len(self._stack):
+            self.add_to_timer(self._stack[0], time.time() - self.start)
+        self.start = time.time()
+        self._stack.insert(0, name)
+
+    def pop(self):
+        # pop name from stack, restart previous timer
+        self.add_to_timer(self._stack.pop(0), time.time() - self.start)
+        self.start = time.time()
+
+    def print_report(self):
+        print("Timing Report:")
+        
+        # Calculate the maximum length of function names
+        max_name_length = max(len(name) for name in self.timers.keys())
+        
+        # Print the header with dynamic width for function names
+        print(f"{'Function':<{max_name_length}} {'Time (s)':<10} {'Calls':<10}")
+        print("-" * (max_name_length + 30))
+        
+        # Print each function's timing report with dynamic width for function names
+        for name, duration in self.timers.items():
+            print(f"{name:<{max_name_length}} {duration:<10.4f} {self.call_counts[name]:<10}")
+
+TIMER = Timer()
+
+def timer_wrap(func):
+    def wrapper(*args, **kwargs):
+        name = func.__name__
+        TIMER.stack(name)
+        ans = func(*args, **kwargs)
+        TIMER.pop()
+        return ans
+    return wrapper
 
 
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
+@timer_wrap
 def check_position(state: torch.tensor) -> bool:
     if state.size() != (3, 3, 3):
         red("Warning: Invalid Board State - Incorrect size")
@@ -50,7 +104,7 @@ def check_position(state: torch.tensor) -> bool:
     
     return True
 
-
+@timer_wrap
 def show_position(state : torch.tensor, check_validity : bool = True, replace_symbols : bool = True) -> None:
     if check_validity:
         if not check_position(state):
@@ -80,6 +134,7 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
     
     print(board_template.format(*input))
 
+@timer_wrap
 def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
     while True:
         move = input("Where should a stone be added? (Format: ring x y): ")
@@ -101,6 +156,7 @@ def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
     state[coords] = colour
     return coords
 
+@timer_wrap
 def input_next_remove(state: torch.tensor, colour: int) -> None:
     while True:
         move = input("Where should a stone be removed? (Format: ring x y): ")
@@ -123,6 +179,7 @@ def input_next_remove(state: torch.tensor, colour: int) -> None:
 
     state[coords] = 0
 
+@timer_wrap
 def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> tuple[int]:
     while True:
         move = input("Please provide the next move in the format (ring_from x_from y_from ring_to x_to y_to): ")
@@ -160,6 +217,7 @@ def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = Fals
     state[coords_to] = colour
     return coords_to
 
+@timer_wrap
 def initialize_neighbour_map() -> List:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
 
@@ -199,6 +257,7 @@ def initialize_neighbour_map() -> List:
 
 neighbors_map = initialize_neighbour_map()
 
+@timer_wrap
 def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI, 
                             little_cross : float = THREE_NEIGH_POSITIONS_MULTI, 
                             corner : float = CORNER_POSITION_MULTI) -> torch.tensor:
@@ -217,6 +276,7 @@ def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI,
 
 board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, little_cross=THREE_NEIGH_POSITIONS_MULTI)
 
+@timer_wrap
 def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) -> List:
     """ Returns list of free neighboring cells for each cell"""
     free_neighs = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -229,6 +289,7 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
 
     return free_neighs
 
+@timer_wrap
 def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
     colour = state[move]
     if colour != 1 and colour != -1:
@@ -246,33 +307,32 @@ def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
     else:
         return False
     
-
+@timer_wrap
 def check_possible_mills(state : torch.tensor, colour : int) -> List:
     #TODO optimize this
     possible_mills = []
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                if state[i, j, k] == colour:
-                    if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
-                        if j == 1 or k == 1:
-                            possible_mills.append(((i - 2) % 3, j, k))
-                    if state[i - 1, j, k] == 0 and state[i - 2, j, k] == colour:
-                        if j == 1 or k == 1:
-                            possible_mills.append(((i - 1) % 3, j, k))
+    positions = torch.nonzero(state == colour).tolist()
+    for index in positions:
+        i, j, k = index
+        if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
+            if j == 1 or k == 1:
+                possible_mills.append(((i - 2) % 3, j, k))
+        if state[i - 1, j, k] == 0 and state[i - 2, j, k] == colour:
+            if j == 1 or k == 1:
+                possible_mills.append(((i - 1) % 3, j, k))
 
-                    if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
-                        possible_mills.append((i, (j - 2) % 3, k))
-                    if state[i, j - 1, k] == 0 and state[i, j - 2, k] == colour:
-                        possible_mills.append((i, (j - 1) % 3, k))
+        if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
+            possible_mills.append((i, (j - 2) % 3, k))
+        if state[i, j - 1, k] == 0 and state[i, j - 2, k] == colour:
+            possible_mills.append((i, (j - 1) % 3, k))
 
-                    if state[i, j, k - 1] == colour and state[i, j, k - 2] == 0:
-                        possible_mills.append((i, j, (k - 2) % 3))
-                    if state[i, j, k - 1] == 0 and state[i, j, k - 2] == colour:
-                        possible_mills.append((i, j, (k - 1) % 3))
+        if state[i, j, k - 1] == colour and state[i, j, k - 2] == 0:
+            possible_mills.append((i, j, (k - 2) % 3))
+        if state[i, j, k - 1] == 0 and state[i, j, k - 2] == colour:
+            possible_mills.append((i, j, (k - 1) % 3))
     return list(dict.fromkeys(possible_mills))
 
-
+@timer_wrap
 def legal_moves_early(state : torch.tensor) -> List:
     moves = []
     pieces = torch.nonzero(state == 0).tolist()
@@ -281,6 +341,7 @@ def legal_moves_early(state : torch.tensor) -> List:
             moves.append(tuple(index))
     return moves
 
+@timer_wrap
 def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
     moves = []
 
@@ -295,6 +356,7 @@ def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None
                 moves.append([(i, j, k), free])
     return moves
 
+@timer_wrap
 def legal_moves_end(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
     moves = []
     pieces = torch.nonzero(state == colour).tolist()
@@ -305,7 +367,7 @@ def legal_moves_end(state : torch.tensor, colour : int, free_spaces : Any = None
                 moves.append([tuple(index), tuple(emp)])
     return moves
 
-
+@timer_wrap
 def removeable_pieces(state : torch.tensor, colour : int) -> List:
     pieces = torch.nonzero(state == -colour).tolist()
     i = 0
@@ -319,6 +381,7 @@ def removeable_pieces(state : torch.tensor, colour : int) -> List:
     else:
         return torch.nonzero(state == -colour).tolist()
 
+@timer_wrap
 def new_board_state_early(state : torch.tensor, move : tuple[int], colour : int) -> List:
     new_states = []
     original_state = torch.clone(state)
@@ -332,6 +395,7 @@ def new_board_state_early(state : torch.tensor, move : tuple[int], colour : int)
         new_states.append(original_state)
     return new_states
 
+@timer_wrap
 def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : int) -> List:
     new_states = []
     original_state = torch.clone(state)
@@ -348,7 +412,7 @@ def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : 
         new_states.append(original_state)
     return new_states
         
-
+@timer_wrap
 def evaluate_position(state : torch.tensor, 
                         board_value : torch.tensor = board_value, 
                         is_early_game : bool = False, 
@@ -370,6 +434,7 @@ def evaluate_position(state : torch.tensor,
     piece_value = state * board_value
     return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black) + open_mill_weight * (open_mill_white - open_mill_black)
 
+@timer_wrap
 def get_children_early(state : torch.tensor, colour : int):
     children = []
     moves = legal_moves_early(state)
@@ -377,6 +442,7 @@ def get_children_early(state : torch.tensor, colour : int):
         children += new_board_state_early(state, move, colour)
     return children
 
+@timer_wrap
 def is_terminal_node(state : torch.tensor, 
                         is_early_game : bool = False,
                         free_spaces : Any  = None) -> int:
@@ -404,6 +470,7 @@ def is_terminal_node(state : torch.tensor,
     
     return 0 # Still undecided
 
+@timer_wrap
 def minimax_early(node : torch.tensor, 
                 depth : int, 
                 alpha : float, 
@@ -471,27 +538,30 @@ else:
 
 
 early_count = 0
+try:
+    while early_count < 19:
+        show_position(board_state)
+        if player_turn:
+            move = input_next_add(board_state, PLAYER_COLOUR)
+            if check_mill(board_state, move):
+                show_position(board_state)
+                input_next_remove(board_state, PLAYER_COLOUR)
+            board_state_history.append([np.nan, board_state])
+            player_turn = False
+        else:
+            depth = 0
+            approx_calls = 1
+            while approx_calls < MAX_APPROX_EVAL_CALLS:
+                approx_calls *= len(legal_moves_early(board_state)) - depth
+                depth += 1
+            eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+            board_state_history.append([eval, board_state])
+            player_turn = True
+        early_count += 1
+except KeyboardInterrupt:
+    pass
 
-while early_count < 19:
-    show_position(board_state)
-    if player_turn:
-        move = input_next_add(board_state, PLAYER_COLOUR)
-        if check_mill(board_state, move):
-            show_position(board_state)
-            input_next_remove(board_state, PLAYER_COLOUR)
-        board_state_history.append([np.nan, board_state])
-        player_turn = False
-    else:
-        depth = 0
-        approx_calls = 1
-        while approx_calls < MAX_APPROX_EVAL_CALLS:
-            approx_calls *= len(legal_moves_early(board_state)) - depth
-            depth += 1
-        eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
-        board_state_history.append([eval, board_state])
-        player_turn = True
-    early_count += 1
-
+TIMER.print_report()
 
 exit()
 
