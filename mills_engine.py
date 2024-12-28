@@ -12,7 +12,6 @@ LEGAL_MOVES_WEIGHT          = 0.3
 
 #TODO: Implement list of all past board states and the ability to go back to the previous board state
 #TODO: Add Openingbook where the program always sets in the four crossings first
-#TODO: Optimize away all the triple for loops
 
 
 
@@ -143,7 +142,9 @@ def count_stones(state : torch.tensor) -> List[int]:
 def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
     while True:
         move = input("Where should a stone be added? (Format: ring x y): ")
-        if re.match(r'^\d \d \d$', move):
+        if move == "z" or move == "zzz":
+            return move
+        elif re.match(r'^\d \d \d$', move):
             coords = tuple(map(int, move.split()))
             if all(n in {0, 1, 2} for n in coords):
                 if not (coords[1] == 1 and coords[2] == 1):
@@ -482,7 +483,7 @@ def minimax_early(node : torch.tensor,
 
 
 board_state = torch.zeros((3,3,3), dtype=int)
-board_state_history = [[np.nan, board_state]]
+board_state_history = [[np.nan, torch.clone(board_state)]]
 
 PLAYER_COLOUR = 1
 MAX_APPROX_EVAL_CALLS = 1e4
@@ -513,40 +514,64 @@ else:
     COMPUTER_MAX = True
 
 
-white_placed = 0
-black_placed = 0
+move_number = 0
 try:
-    while white_placed + black_placed < 18:
+    while move_number < 18:
         show_position(board_state)
+        print("Move %i / 18:" %(move_number + 1))
         if player_turn:
             if PLAYER_COLOUR == 1:
-                white_placed += 1
-                print("Please place white stone %i / 9" %white_placed)
+                print("Please place white stone %i / 9" %(move_number // 2 + 1))
             else:
-                black_placed += 1
-                print("Please place black stone %i / 9" %black_placed)
+                print("Please place black stone %i / 9" %(move_number // 2 + 1))
             move = input_next_add(board_state, PLAYER_COLOUR)
-            if check_mill(board_state, move):
-                show_position(board_state)
-                input_next_remove(board_state, PLAYER_COLOUR)
-            board_state_history.append([np.nan, board_state])
-            player_turn = False
-        else:
-            if PLAYER_COLOUR == 1:
-                black_placed += 1
-                print("Computer places black stone %i / 9" %black_placed)
+            if move == "z":
+                if move_number >= 2:
+                    move_number -= 2
+                    board_state = torch.clone(board_state_history[move_number][1])
+                    board_state_history.pop(-1)
+                    board_state_history.pop(-1)
+                    print("Going back a full move.")
+                else:
+                    red("Cannot go further back.")
+            elif move == "zzz":
+                if move_number >= 1:
+                    move_number -= 1
+                    board_state = torch.clone(board_state_history[move_number][1])
+                    board_state_history.pop(-1)
+                    print("Going back half a move.")
+                    red("This switches sides!")
+                    PLAYER_COLOUR *= -1
+                    COMPUTER_MAX = not COMPUTER_MAX
+                else:
+                    red("Cannot go further back.")
             else:
-                white_placed += 1
-                print("Computer places white stone %i / 9" %white_placed)
+                if check_mill(board_state, move):
+                    show_position(board_state)
+                    input_next_remove(board_state, PLAYER_COLOUR)
+                board_state_history.append([np.nan, torch.clone(board_state)])
+                player_turn = False
+                move_number += 1
+        else:
             depth = 0
             approx_calls = 1
             while approx_calls < MAX_APPROX_EVAL_CALLS:
                 approx_calls *= len(legal_moves_early(board_state)) - depth
                 depth += 1
+            if PLAYER_COLOUR == 1:
+                print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
+            else:
+                print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
             eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
-            board_state_history.append([eval, board_state])
+            board_state_history.append([eval, torch.clone(board_state)])
             player_turn = True
+            move_number += 1
 except KeyboardInterrupt:
+    print()
     pass
+
+for i, bb in enumerate(board_state_history):
+    print(i)
+    show_position(bb[1])
 
 TIMER.print_report()
