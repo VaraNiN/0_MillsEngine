@@ -81,7 +81,7 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
 
 def input_next_add(state: torch.tensor, colour: int) -> None:
     while True:
-        move = input("Please provide the next move in the format: ring x y: ")
+        move = input("Where should a stone be added? (Format: ring x y): ")
         if re.match(r'^\d \d \d$', move):
             coords = tuple(map(int, move.split()))
             if all(n in {0, 1, 2} for n in coords):
@@ -101,7 +101,7 @@ def input_next_add(state: torch.tensor, colour: int) -> None:
 
 def input_next_remove(state: torch.tensor, colour: int) -> None:
     while True:
-        move = input("Please provide the next move in the format: ring x y: ")
+        move = input("Where should a stone be removed? (Format: ring x y): ")
         if re.match(r'^\d \d \d$', move):
             coords = tuple(map(int, move.split()))
             if all(n in {0, 1, 2} for n in coords):
@@ -120,6 +120,42 @@ def input_next_remove(state: torch.tensor, colour: int) -> None:
             print("Invalid format.")
 
     state[coords] = 0
+
+def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> None:
+    while True:
+        move = input("Please provide the next move in the format: ring_from x_from y_from ring_to x_to y_to: ")
+        if re.match(r'^\d \d \d \d \d \d$', move):
+            ring_from, x_from, y_from, ring_to, x_to, y_to = map(int, move.split())
+            all_coords = tuple(map(int, move.split()))
+            coords_from = tuple((ring_from, x_from, y_from))
+            coords_to = tuple((ring_to, x_to, y_to ))
+            if all(n in {0, 1, 2} for n in all_coords):
+                if not (coords_from[1] == 1 and coords_from[2] == 1):
+                    if not (coords_to[1] == 1 and coords_to[2] == 1):
+                        if state[coords_from] == colour:
+                            if state[coords_to] == 0:
+                                if is_late_game:
+                                    break
+                                else:
+                                    if coords_to in get_neighbor_free(state)[ring_from][x_from][y_from]:
+                                        break
+                                    else:
+                                        print("Invalid values. Cannot reach target from origin!")
+                            else:
+                                print("Invalid values. Target is not empty!")
+                        else:
+                            print("Invalid values. None of your stones is at origin!")
+                    else:
+                        print("Invalid values. x and y cannot both be 1")
+                else:
+                    print("Invalid values. x and y cannot both be 1")
+            else:
+                print("Invalid values. All have to be 0, 1 or 2")
+        else:
+            print("Invalid format.")
+
+    state[coords_from] = 0
+    state[coords_to] = colour
 
 def initialize_neighbour_map() -> List:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -178,7 +214,7 @@ board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, littl
 
 
 def get_neighbor_weights(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
-    """ Returns wieghting based on free neighboring cells"""
+    """ Returns weighting based on free neighboring cells"""
     neigh_count = torch.ones(state.size(), dtype=float)
     for i in range(3):
         for j in range(3):
@@ -256,6 +292,6 @@ board_state[1, 0, 0] = -1
 
 show_position(board_state)
 
-input_next_remove(board_state, colour=1)
+input_next_move(board_state, colour=1, is_late_game=True)
 
 show_position(board_state)
