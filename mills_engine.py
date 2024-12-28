@@ -7,22 +7,21 @@ board_state = torch.zeros((3,3,3), dtype=int)
 
 neighbors_mult = torch.zeros((3,3,3), dtype=float)
 
-board_value = torch.Tensor([
-    [[1.0, 1.2, 1.0], 
-     [1.2, 0.0, 1.2], 
-     [1.0, 1.2, 1.0]],
-    [[1.0, 1.5, 1.0], 
-     [1.5, 0.0, 1.5], 
-     [1.0, 1.5, 1.0]],
-    [[1.0, 1.2, 1.0], 
-     [1.2, 0.0, 1.2], 
-     [1.0, 1.2, 1.0]]
-])
+THREE_NEIGH_POSITIONS_MULTI = 1.2
+FOUR_NEIGH_POSITIONS_MULTI  = 1.3
+ACTUAL_FREE_NEIGH_MULTI     = 0.1
+
+
+
+
+
+
+
 
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
-def check_position(state: torch.Tensor) -> bool:
+def check_position(state: torch.tensor) -> bool:
     if state.size() != (3, 3, 3):
         red("Warning: Invalid Board State - Incorrect size")
         print(state)
@@ -51,7 +50,7 @@ def check_position(state: torch.Tensor) -> bool:
     return True
 
 
-def show_position(state : torch.Tensor, check_validity : bool = True, replace_symbols : bool = True) -> None:
+def show_position(state : torch.tensor, check_validity : bool = True, replace_symbols : bool = True) -> None:
     if check_validity:
         if not check_position(state):
             return
@@ -80,7 +79,7 @@ def show_position(state : torch.Tensor, check_validity : bool = True, replace_sy
     
     print(board_template.format(*input))
 
-def input_next_move(state: torch.Tensor, colour: int) -> None:
+def input_next_move(state: torch.tensor, colour: int) -> None:
     while True:
         move = input("Please provide the next move in the format: ring x y: ")
         if re.match(r'^\d \d \d$', move):
@@ -139,21 +138,45 @@ def initialize_neighbour_map() -> List:
 
 neighbors_map = initialize_neighbour_map()
 
-def get_neighbors(state : torch.Tensor, neigh_map : List = neighbors_map) -> torch.Tensor:
+def initialize_boardvalues(big_cross : int = FOUR_NEIGH_POSITIONS_MULTI, little_cross : int = THREE_NEIGH_POSITIONS_MULTI) -> torch.tensor:
+    board_value = torch.tensor([
+        [[1.0, little_cross, 1.0], 
+        [little_cross, 0.0, little_cross], 
+        [1.0, little_cross, 1.0]],
+        [[1.0, big_cross, 1.0], 
+        [big_cross, 0.0, big_cross], 
+        [1.0, big_cross, 1.0]],
+        [[1.0, little_cross, 1.0], 
+        [little_cross, 0.0, little_cross], 
+        [1.0, little_cross, 1.0]]
+    ])
+    return board_value
+
+board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, little_cross=THREE_NEIGH_POSITIONS_MULTI)
+
+
+def get_neighbors(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
     """ Returns number of free neighbouring cells """
     if check_position(state):
-        neigh_count = torch.zeros(state.size(), dtype=int)
+        neigh_count = torch.ones(state.size(), dtype=float)
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    neigh_count[i, j ,k] = len(neigh_map[i][j][k])
+                    neigh_count[i, j ,k] += free_weight * len(neigh_map[i][j][k])
                     for neigh in neigh_map[i][j][k]:
                         if state[neigh] != 0:
-                            neigh_count[i, j ,k] -= 1
+                            neigh_count[i, j ,k] -= free_weight
 
         return neigh_count
     else:
         exit()
+
+def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map) -> float:
+    free_neighbours = get_neighbors(board_state)    
+    
+    piece_value = state * board_value * free_neighbours
+    show_position(piece_value, check_validity=False, replace_symbols=False)
+    return float(piece_value.sum())
 
 
 
@@ -163,3 +186,5 @@ board_state[1, 2, 2] = -1
 show_position(board_state)
 free_neighbours = get_neighbors(board_state)
 show_position(free_neighbours, check_validity=False, replace_symbols=False)
+
+print(evaluate_position(board_state))
