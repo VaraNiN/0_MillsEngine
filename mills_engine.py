@@ -11,7 +11,7 @@ THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 ACTUAL_FREE_NEIGH_MULTI     = 0.1
 
-
+#TODO: Implement list of all past board states and the ability to go back to the previous board state
 
 
 
@@ -123,7 +123,7 @@ def input_next_remove(state: torch.tensor, colour: int) -> None:
 
 def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> None:
     while True:
-        move = input("Please provide the next move in the format: ring_from x_from y_from ring_to x_to y_to: ")
+        move = input("Please provide the next move in the format (ring_from x_from y_from ring_to x_to y_to): ")
         if re.match(r'^\d \d \d \d \d \d$', move):
             ring_from, x_from, y_from, ring_to, x_to, y_to = map(int, move.split())
             all_coords = tuple(map(int, move.split()))
@@ -240,10 +240,10 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
 
 def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map) -> float:
     if torch.sum(state == 1) < 3:
-        return -1000 # Black has won
+        return -9001 # Black has won
     
     if abs(torch.sum(state == -1)) < 3:
-        return 1000 # White has won
+        return 9001 # White has won
     
     free_neighbours = get_neighbor_weights(board_state)    
     piece_value = state * board_value * free_neighbours
@@ -271,8 +271,9 @@ def legal_moves_early(state : torch.tensor) -> List:
     for i in range(3):
         for j in range(3):
             for k in range(3):
-                if state[i, j, k] == 0:
-                    moves.append((i, j, k))
+                if not (j == 1 and k == 1):
+                    if state[i, j, k] == 0:
+                        moves.append((i, j, k))
     return moves
 
 
@@ -291,6 +292,11 @@ board_state[1, 0, 1] = -1
 board_state[1, 0, 0] = -1
 
 show_position(board_state)
+
+print(legal_moves_early(board_state))
+print(len(legal_moves_early(board_state)))
+
+exit()
 
 input_next_move(board_state, colour=1, is_late_game=True)
 
