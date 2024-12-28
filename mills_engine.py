@@ -238,12 +238,13 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
 
     return free_neighs
 
-def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map) -> float:
-    if torch.sum(state == 1) < 3:
-        return -9001 # Black has won
-    
-    if abs(torch.sum(state == -1)) < 3:
-        return 9001 # White has won
+def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map, is_early_game : bool = False) -> float:
+    if not is_early_game:
+        if torch.sum(state == 1) < 3:
+            return -9001 # Black has won
+        
+        if abs(torch.sum(state == -1)) < 3:
+            return 9001 # White has won
     
     free_neighbours = get_neighbor_weights(board_state)    
     piece_value = state * board_value * free_neighbours
