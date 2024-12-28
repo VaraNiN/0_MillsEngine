@@ -42,7 +42,7 @@ def check_position(state: torch.tensor) -> bool:
         print(state)
         return False
     
-    if torch.sum(state == -1) > 9:
+    if abs(torch.sum(state == -1)) > 9:
         red("Warning: Invalid Board State - Too many black stones")
         print(state)
         return False
@@ -79,7 +79,7 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
     
     print(board_template.format(*input))
 
-def input_next_move(state: torch.tensor, colour: int) -> None:
+def input_next_add(state: torch.tensor, colour: int) -> None:
     while True:
         move = input("Please provide the next move in the format: ring x y: ")
         if re.match(r'^\d \d \d$', move):
@@ -98,6 +98,28 @@ def input_next_move(state: torch.tensor, colour: int) -> None:
             print("Invalid format.")
 
     state[coords] = colour
+
+def input_next_remove(state: torch.tensor, colour: int) -> None:
+    while True:
+        move = input("Please provide the next move in the format: ring x y: ")
+        if re.match(r'^\d \d \d$', move):
+            coords = tuple(map(int, move.split()))
+            if all(n in {0, 1, 2} for n in coords):
+                if not (coords[1] == 1 and coords[2] == 1):
+                    if state[coords] == -colour:
+                        break
+                    elif state[coords] == colour:
+                        print("Invalid values. Cannot remove your own stones.")
+                    else:
+                        print("Invalid values. No stone there.")
+                else:
+                    print("Invalid values. x and y cannot both be 1")
+            else:
+                print("Invalid values. All have to be 0, 1 or 2")
+        else:
+            print("Invalid format.")
+
+    state[coords] = 0
 
 def initialize_neighbour_map() -> List:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -155,8 +177,8 @@ def initialize_boardvalues(big_cross : int = FOUR_NEIGH_POSITIONS_MULTI, little_
 board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, little_cross=THREE_NEIGH_POSITIONS_MULTI)
 
 
-def get_neighbors(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
-    """ Returns number of free neighbouring cells """
+def get_neighbor_weights(state : torch.tensor, neigh_map : List = neighbors_map, free_weight : float = ACTUAL_FREE_NEIGH_MULTI) -> torch.tensor:
+    """ Returns wieghting based on free neighboring cells"""
     neigh_count = torch.ones(state.size(), dtype=float)
     for i in range(3):
         for j in range(3):
@@ -168,11 +190,27 @@ def get_neighbors(state : torch.tensor, neigh_map : List = neighbors_map, free_w
 
     return neigh_count
 
+def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) -> List:
+    """ Returns list of free neighboring cells for each cell"""
+    free_neighs = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                for neigh in neigh_map[i][j][k]:
+                    if state[neigh] == 0:
+                        free_neighs[i][j][k].append(neigh)
+
+    return free_neighs
+
 def evaluate_position(state : torch.tensor, board_value : torch.tensor = board_value, neigh_map : List = neighbors_map) -> float:
-    free_neighbours = get_neighbors(board_state)    
+    if torch.sum(state == 1) < 3:
+        return -1000 # Black has won
     
+    if abs(torch.sum(state == -1)) < 3:
+        return 1000 # White has won
+    
+    free_neighbours = get_neighbor_weights(board_state)    
     piece_value = state * board_value * free_neighbours
-    show_position(piece_value, check_validity=False, replace_symbols=False)
     return float(piece_value.sum())
 
 def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
@@ -190,6 +228,18 @@ def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
         return True
     else:
         return False
+    
+
+def legal_moves_early(state : torch.tensor) -> List:
+    moves = []
+    for i in range(3):
+        for j in range(3):
+            for k in range(3):
+                if state[i, j, k] == 0:
+                    moves.append((i, j, k))
+    return moves
+
+
 
 
 
@@ -205,4 +255,7 @@ board_state[1, 0, 1] = -1
 board_state[1, 0, 0] = -1
 
 show_position(board_state)
-print(check_mill(board_state, (1, 2, 2)))
+
+input_next_remove(board_state, colour=1)
+
+show_position(board_state)
