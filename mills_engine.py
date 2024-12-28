@@ -290,22 +290,22 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
     return free_neighs
 
 @timer_wrap
-def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
-    colour = state[move]
-    if colour != 1 and colour != -1:
-        red("Something went wrong while checking if a mill occured. state[move] = 0")
+def check_mill(state: torch.tensor, move: tuple[int]) -> bool:
+    colour = int(state[move])
+    if colour not in {1, -1}:
+        red("Something went wrong while checking if a mill occurred. state[move] = 0")
         exit()
+    
     ring, x, y = move
 
-    if state[ring - 1, x, y] == colour and state[ring - 2, x, y] == colour:
-        if x == 1 or y == 1:
-            return True
-    elif state[ring, x - 1, y] == colour and state[ring, x - 2, y] == colour:
+    if (x == 1 or y == 1) and state[ring - 1, x, y] == colour and state[ring - 2, x, y] == colour:
         return True
-    elif state[ring, x, y - 1] == colour and state[ring, x, y - 2] == colour:
+    if state[ring, x - 1, y] == colour and state[ring, x - 2, y] == colour:
         return True
-    else:
-        return False
+    if state[ring, x, y - 1] == colour and state[ring, x, y - 2] == colour:
+        return True
+    
+    return False
     
 @timer_wrap
 def check_possible_mills(state: torch.tensor, colour: int) -> List:
