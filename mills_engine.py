@@ -406,8 +406,8 @@ def minimax_early(node, depth, alpha, beta, maximizingPlayer):
 
     if maximizingPlayer:
         maxEval = float('-inf')
-        for child in get_children(node):
-            eval, _ = minimax(child, depth - 1, alpha, beta, False)
+        for child in get_children_early(node, 1):
+            eval, _ = minimax_early(child, depth - 1, alpha, beta, False)
             if eval > maxEval:
                 maxEval = eval
                 best_node = child
@@ -417,8 +417,8 @@ def minimax_early(node, depth, alpha, beta, maximizingPlayer):
         return maxEval, best_node
     else:
         minEval = float('inf')
-        for child in get_children(node):
-            eval, _ = minimax(child, depth - 1, alpha, beta, True)
+        for child in get_children_early(node, -1):
+            eval, _ = minimax_early(child, depth - 1, alpha, beta, True)
             if eval < minEval:
                 minEval = eval
                 best_node = child
@@ -442,14 +442,27 @@ board_state[2, 0, 2] = 1
 board_state[1, 0, 0] = -1
 board_state[1, 0, 1] = -1
 board_state[1, 0, 2] = -1
-#board_state[1, 2, 0] = -1
-#board_state[0, 0, 1] = -1
-#board_state[1, 2, 2] = -1
+board_state[1, 2, 0] = -1
+board_state[0, 0, 1] = -1
+board_state[1, 2, 2] = -1
 
 show_position(board_state)
 
 #print(get_children_early(board_state, 1))
 
+# Starting point
+root_node = board_state  # Define the root node of the game tree
+depth = 3  # Define the depth to search
+alpha = float('-inf')
+beta = float('inf')
+maximizingPlayer = True  # Define if the starting player is maximizing
+
+best_value, best_node = minimax_early(root_node, depth, alpha, beta, True)
+print("Best value:", best_value)
+print("Best node:")
+show_position(best_node)
+
+exit()
 
 for i in range(len(get_children_early(board_state, 1))):
     print(i)
