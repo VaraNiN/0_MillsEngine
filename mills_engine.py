@@ -299,10 +299,25 @@ def removeable_pieces(state : torch.tensor, colour : int) -> List:
     else:
         return torch.nonzero(state == -colour).tolist()
 
-def new_board_state_early(state : torch.tensor, move : Any, colour : int) -> List:
+def new_board_state_early(state : torch.tensor, move : tuple[int], colour : int) -> List:
     new_states = []
     state[move] = colour
     if check_mill(state, move):
+        for index in removeable_pieces(state, colour):
+            dummy_state = torch.clone(state)
+            dummy_state[tuple(index)] = 0
+            new_states.append(dummy_state)
+    else:
+        new_states.append(state)
+    return new_states
+
+def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : int) -> List:
+    new_states = []
+    move_from = move[0]
+    move_to = move[1]
+    state[move_from] = 0
+    state[move_to] = colour
+    if check_mill(state, move_to):
         for index in removeable_pieces(state, colour):
             dummy_state = torch.clone(state)
             dummy_state[tuple(index)] = 0
@@ -366,11 +381,9 @@ board_state[1, 0, 0] = -1
 
 show_position(board_state)
 
-board_state = new_board_state_early(board_state, tuple([2, 2, 1]), 1)
+board_state = new_board_state_mid(board_state, [tuple([1, 2, 1]), tuple([2, 2, 1])], 1)
 
 show_position(board_state[0])
-
-print(board_state)
 
 exit()
 
