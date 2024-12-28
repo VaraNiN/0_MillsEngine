@@ -280,12 +280,12 @@ board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, littl
 def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) -> List:
     """ Returns list of free neighboring cells for each cell"""
     free_neighs = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
-    for i in range(3):
-        for j in range(3):
-            for k in range(3):
-                for neigh in neigh_map[i][j][k]:
-                    if state[neigh] == 0:
-                        free_neighs[i][j][k].append(neigh)
+    positions = torch.nonzero(state == 0).tolist()
+    for index in positions:
+        i, j, k = index
+        for neigh in neigh_map[i][j][k]:
+            l, m, n = neigh
+            free_neighs[l][m][n].append(index)
 
     return free_neighs
 
