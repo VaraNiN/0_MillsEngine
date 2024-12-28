@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import re
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
@@ -79,7 +80,7 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
     
     print(board_template.format(*input))
 
-def input_next_add(state: torch.tensor, colour: int) -> None:
+def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
     while True:
         move = input("Where should a stone be added? (Format: ring x y): ")
         if re.match(r'^\d \d \d$', move):
@@ -98,6 +99,7 @@ def input_next_add(state: torch.tensor, colour: int) -> None:
             print("Invalid format.")
 
     state[coords] = colour
+    return coords
 
 def input_next_remove(state: torch.tensor, colour: int) -> None:
     while True:
@@ -121,7 +123,7 @@ def input_next_remove(state: torch.tensor, colour: int) -> None:
 
     state[coords] = 0
 
-def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> None:
+def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> tuple[int]:
     while True:
         move = input("Please provide the next move in the format (ring_from x_from y_from ring_to x_to y_to): ")
         if re.match(r'^\d \d \d \d \d \d$', move):
@@ -156,6 +158,7 @@ def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = Fals
 
     state[coords_from] = 0
     state[coords_to] = colour
+    return coords_to
 
 def initialize_neighbour_map() -> List:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -398,7 +401,11 @@ def is_terminal_node(state : torch.tensor,
     
     return 0 # Still undecided
 
-def minimax_early(node, depth, alpha, beta, maximizingPlayer):
+def minimax_early(node : torch.tensor, 
+                depth : int, 
+                alpha : float, 
+                beta : float, 
+                maximizingPlayer : bool) -> tuple[float, torch.tensor]:
     if depth == 0 or abs(is_terminal_node(node, is_early_game = True))==1:
         return evaluate_position(node, is_early_game = True), node
 
@@ -429,14 +436,20 @@ def minimax_early(node, depth, alpha, beta, maximizingPlayer):
 
 
 board_state = torch.zeros((3,3,3), dtype=int)
+board_state_history = [[np.nan, board_state]]
+
+PLAYER_COLOUR = 1
+MAX_APPROX_EVAL_CALLS = 1e4
+BASE_ALPHA = float('-inf')
+BASE_BETA = float('inf')
 
 
-board_state[2, 1, 2] = 1
+""" board_state[2, 1, 2] = 1
 board_state[1, 1, 2] = 1
 board_state[1, 2, 1] = 1
+board_state[0, 1, 2] = 1
 board_state[2, 2, 0] = 1
 board_state[2, 2, 2] = 1
-board_state[0, 1, 2] = 1
 board_state[2, 0, 2] = 1
 
 board_state[1, 0, 0] = -1
@@ -444,55 +457,40 @@ board_state[1, 0, 1] = -1
 board_state[1, 0, 2] = -1
 board_state[1, 2, 0] = -1
 board_state[0, 0, 1] = -1
-board_state[1, 2, 2] = -1
+board_state[1, 2, 2] = -1 """
 
-show_position(board_state)
+if PLAYER_COLOUR == 1:
+    player_turn = True
+    COMPUTER_MAX = False
+else:
+    player_turn = False
+    COMPUTER_MAX = True
 
-#print(get_children_early(board_state, 1))
 
-# Starting point
-root_node = board_state  # Define the root node of the game tree
-depth = 3  # Define the depth to search
-alpha = float('-inf')
-beta = float('inf')
-maximizingPlayer = True  # Define if the starting player is maximizing
+early_count = 0
 
-best_value, best_node = minimax_early(root_node, depth, alpha, beta, True)
-print("Best value:", best_value)
-print("Best node:")
-show_position(best_node)
+while early_count < 19:
+    show_position(board_state)
+    if player_turn:
+        move = input_next_add(board_state, PLAYER_COLOUR)
+        if check_mill(board_state, move):
+            show_position(board_state)
+            input_next_remove(board_state, PLAYER_COLOUR)
+        board_state_history.append([np.nan, board_state])
+        player_turn = False
+    else:
+        depth = 0
+        approx_calls = 1
+        while approx_calls < MAX_APPROX_EVAL_CALLS:
+            approx_calls *= len(legal_moves_early(board_state)) - depth
+            depth += 1
+        eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+        board_state_history.append([eval, board_state])
+        player_turn = True
+    early_count += 1
 
-exit()
-
-for i in range(len(get_children_early(board_state, 1))):
-    print(i)
-    show_position(get_children_early(board_state, 1)[i])
-
-exit()
-
-print(legal_moves_mid(board_state, 1))
-
-exit()
-
-board_state = new_board_state_mid(board_state, [tuple([1, 2, 1]), tuple([2, 2, 1])], 1)
-
-show_position(board_state[0])
-
-exit()
-
-print(removeable_pieces(board_state, -1))
 
 exit()
-
-print(legal_moves_mid(board_state, -1))
-
-print(evaluate_position(board_state))
-
-exit()
-
-input_next_move(board_state, colour=1, is_late_game=True)
-
-show_position(board_state)
 
 
 
