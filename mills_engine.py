@@ -12,6 +12,7 @@ FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 ACTUAL_FREE_NEIGH_MULTI     = 0.1
 
 #TODO: Implement list of all past board states and the ability to go back to the previous board state
+#TODO: Add Openingbook where the program always sets in the four crossings first
 
 
 
