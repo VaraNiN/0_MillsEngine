@@ -97,13 +97,39 @@ def input_next_move(state: torch.Tensor, colour: int) -> None:
 
     state[coords] = colour
 
+def initialize_neighbour_map() -> List:
+    neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
+
+    for i in range(3): # Corners
+        neighbour_indices[i][0][0].append((i, 1, 0)) # Top left corners
+        neighbour_indices[i][0][0].append((i, 0, 1)) # Top left corners
+
+        neighbour_indices[i][2][0].append((i, 1, 0)) # Top right corners
+        neighbour_indices[i][2][0].append((i, 2, 1)) # Top right corners
+
+        neighbour_indices[i][0][2].append((i, 1, 2)) # Bottom left corners
+        neighbour_indices[i][0][2].append((i, 0, 1)) # Bottom left corners
+
+        neighbour_indices[i][2][2].append((i, 1, 2)) # Bottom right corners
+        neighbour_indices[i][2][2].append((i, 2, 1)) # Bottom right corners
+
+    return neighbour_indices
+
+def update_neighbors(state : torch.Tensor) -> torch.Tensor:
+    return
+
+
 
 board_state[2, 1, 2] = 1
 
-show_position(board_value, check_validity=False)
+nei = initialize_neighbour_map()
+print(nei[0][0][0])
+print(nei)
 exit()
 
 show_position(board_state)
+
+exit()
 
 input_next_move(board_state, 1)
 
