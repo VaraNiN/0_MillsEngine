@@ -97,23 +97,44 @@ def input_next_move(state: torch.Tensor, colour: int) -> None:
 
     state[coords] = colour
 
-def initialize_neighbour_map() -> List:
+def initialize_neighbour_map() -> List[List]:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
 
     for i in range(3): # Corners
-        neighbour_indices[i][0][0].append((i, 1, 0)) # Top left corners
-        neighbour_indices[i][0][0].append((i, 0, 1)) # Top left corners
+        for j in [0, 2]:
+            for k in [0, 2]:
+                if j == 0:
+                    neighbour_indices[i][j][k].append((i, j+1, k))
+                else:
+                    neighbour_indices[i][j][k].append((i, j-1, k))
 
-        neighbour_indices[i][2][0].append((i, 1, 0)) # Top right corners
-        neighbour_indices[i][2][0].append((i, 2, 1)) # Top right corners
+                if k == 0:
+                    neighbour_indices[i][j][k].append((i, j, k+1))
+                else:
+                    neighbour_indices[i][j][k].append((i, j, k-1))
 
-        neighbour_indices[i][0][2].append((i, 1, 2)) # Bottom left corners
-        neighbour_indices[i][0][2].append((i, 0, 1)) # Bottom left corners
+    for i in range(3): # Crossings
+        for j, k in [[0, 1], [1, 0], [2, 1], [1, 2]]:
+            if j == 1:
+                neighbour_indices[i][j][k].append((i, j+1, k))
+                neighbour_indices[i][j][k].append((i, j-1, k))
 
-        neighbour_indices[i][2][2].append((i, 1, 2)) # Bottom right corners
-        neighbour_indices[i][2][2].append((i, 2, 1)) # Bottom right corners
+            if k == 1:
+                neighbour_indices[i][j][k].append((i, j, k+1))
+                neighbour_indices[i][j][k].append((i, j, k-1))
+
+            if i == 0:
+                neighbour_indices[i][j][k].append((i+1, j, k))
+            if i == 1:
+                neighbour_indices[i][j][k].append((i+1, j, k))
+                neighbour_indices[i][j][k].append((i-1, j, k))
+            if i == 2:
+                neighbour_indices[i][j][k].append((i-1, j, k))
+            
 
     return neighbour_indices
+
+neighbors_map = initialize_neighbour_map()
 
 def update_neighbors(state : torch.Tensor) -> torch.Tensor:
     return
@@ -122,9 +143,8 @@ def update_neighbors(state : torch.Tensor) -> torch.Tensor:
 
 board_state[2, 1, 2] = 1
 
-nei = initialize_neighbour_map()
-print(nei[0][0][0])
-print(nei)
+print(type(neighbors_map[2][1][0]))
+print(neighbors_map)
 exit()
 
 show_position(board_state)
