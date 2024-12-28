@@ -308,29 +308,29 @@ def check_mill(state : torch.tensor, move : tuple[int]) -> bool:
         return False
     
 @timer_wrap
-def check_possible_mills(state : torch.tensor, colour : int) -> List:
-    #TODO optimize this
-    possible_mills = []
+def check_possible_mills(state: torch.tensor, colour: int) -> List:
+    possible_mills = set()
     positions = torch.nonzero(state == colour).tolist()
-    for index in positions:
-        i, j, k = index
-        if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
-            if j == 1 or k == 1:
-                possible_mills.append(((i - 2) % 3, j, k))
-        if state[i - 1, j, k] == 0 and state[i - 2, j, k] == colour:
-            if j == 1 or k == 1:
-                possible_mills.append(((i - 1) % 3, j, k))
-
-        if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
-            possible_mills.append((i, (j - 2) % 3, k))
-        if state[i, j - 1, k] == 0 and state[i, j - 2, k] == colour:
-            possible_mills.append((i, (j - 1) % 3, k))
-
-        if state[i, j, k - 1] == colour and state[i, j, k - 2] == 0:
-            possible_mills.append((i, j, (k - 2) % 3))
-        if state[i, j, k - 1] == 0 and state[i, j, k - 2] == colour:
-            possible_mills.append((i, j, (k - 1) % 3))
-    return list(dict.fromkeys(possible_mills))
+    
+    for i, j, k in positions:
+        if j == 1 or k == 1:
+            if state[i - 1, j, k] == colour:
+                if state[i - 2, j, k] == 0:
+                    possible_mills.add(((i - 2) % 3, j, k))
+                elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
+                    possible_mills.add(((i - 1) % 3, j, k))
+            if state[i, j - 1, k] == colour:
+                if state[i, j - 2, k] == 0:
+                    possible_mills.add((i, (j - 2) % 3, k))
+                elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
+                    possible_mills.add((i, (j - 1) % 3, k))
+            if state[i, j, k - 1] == colour:
+                if state[i, j, k - 2] == 0:
+                    possible_mills.add((i, j, (k - 2) % 3))
+                elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
+                    possible_mills.add((i, j, (k - 1) % 3))
+    
+    return list(possible_mills)
 
 @timer_wrap
 def legal_moves_early(state : torch.tensor) -> List:
