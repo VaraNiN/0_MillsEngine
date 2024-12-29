@@ -69,11 +69,22 @@ def input(len : int = 1):
     result = []
     canvas.bind("<Button-1>", lambda event: on_click(event, root, result, len))
 
+    # Adding buttons
+    button_z = tk.Button(root, text="Return 'z'", command=lambda: button_click(root, result, "z"))
+    button_z.pack(side=tk.LEFT, padx=10, pady=10)
+
+    button_zzz = tk.Button(root, text="Return 'zzz'", command=lambda: button_click(root, result, "zzz"))
+    button_zzz.pack(side=tk.RIGHT, padx=10, pady=10)
+
     root.mainloop()
     root.destroy()
 
     return result if result else None
 
+def button_click(root, result, value):
+    result.append(value)
+    root.quit()
+
 if __name__ == "__main__":
-    index = input(2)
-    print(f"Clicked index: {index}")
+    result = input(2)
+    print(f"Result: {result}")
