@@ -9,6 +9,8 @@ CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 LEGAL_MOVES_WEIGHT          = 0.3
+MIN_DEPTH = 4
+MAX_DEPTH = 7
 
 # TODO: Rewrite everything for numpy and add multi-threading
 
@@ -548,6 +550,7 @@ else:
     COMPUTER_MAX = True
 
 
+current_eval = 0
 move_number = 0
 finished_flag = False
 endgame_white = False
@@ -577,7 +580,7 @@ if False:
     board_state_history.append([np.nan, torch.clone(board_state)])
 
 
-if True:
+if False:
     board_state[1, 0, 2] = 1
     board_state[1, 2, 0] = 1
     board_state[1, 2, 2] = 1
@@ -594,7 +597,7 @@ if True:
 try:
     while not finished_flag:
         show_position(board_state)
-        print("Move %i:" %(move_number + 1))
+        print("Move %i with eval %.2f:" %(move_number + 1, current_eval))
 
         # Early Game
         if move_number < 18:
@@ -637,11 +640,26 @@ try:
                 while approx_calls < MAX_APPROX_EVAL_CALLS:
                     approx_calls *= len(legal_moves_early(board_state)) - depth
                     depth += 1
+                if depth < MIN_DEPTH:
+                    depth = MIN_DEPTH
+                if depth > MAX_DEPTH:
+                    depth = MAX_DEPTH
                 if PLAYER_COLOUR == 1:
                     print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
                 else:
                     print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
+                start_time = time.time()
                 eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                end_time = time.time()# Calculate the elapsed time
+                elapsed_time = end_time - start_time
+
+                # Convert elapsed time to minutes, seconds, and milliseconds
+                minutes = int(elapsed_time // 60)
+                seconds = int(elapsed_time % 60)
+                milliseconds = int((elapsed_time * 1000) % 1000)
+
+                print(f"Move made after: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                current_eval = eval
                 board_state_history.append([eval, torch.clone(board_state)])
                 player_turn = True
                 move_number += 1
@@ -693,13 +711,46 @@ try:
                 depth = 0
                 approx_calls = 1
                 while approx_calls < MAX_APPROX_EVAL_CALLS:
-                    if depth % 2 == 0:
-                        approx_calls *= len(legal_moves_mid(board_state, -PLAYER_COLOUR))
+                    if PLAYER_COLOUR == 1:
+                        if depth % 2 == 0:
+                            if endgame_black:
+                                approx_calls *= len(legal_moves_end(board_state, -PLAYER_COLOUR))
+                            else:
+                                approx_calls *= len(legal_moves_mid(board_state, -PLAYER_COLOUR))
+                        else:
+                            if endgame_white:
+                                approx_calls *= len(legal_moves_end(board_state, PLAYER_COLOUR))
+                            else:
+                                approx_calls *= len(legal_moves_mid(board_state, PLAYER_COLOUR))
                     else:
-                        approx_calls *= len(legal_moves_mid(board_state, PLAYER_COLOUR))
+                        if depth % 2 == 0:
+                            if endgame_white:
+                                approx_calls *= len(legal_moves_end(board_state, -PLAYER_COLOUR))
+                            else:
+                                approx_calls *= len(legal_moves_mid(board_state, -PLAYER_COLOUR))
+                        else:
+                            if endgame_black:
+                                approx_calls *= len(legal_moves_end(board_state, PLAYER_COLOUR))
+                            else:
+                                approx_calls *= len(legal_moves_mid(board_state, PLAYER_COLOUR))
                     depth += 1
+                if depth < MIN_DEPTH:
+                    depth = MIN_DEPTH
+                if depth > MAX_DEPTH:
+                    depth = MAX_DEPTH
                 print("Computer thinking with depth %i" %depth)
+                start_time = time.time()
                 eval, board_state = minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+                end_time = time.time()# Calculate the elapsed time
+                elapsed_time = end_time - start_time
+
+                # Convert elapsed time to minutes, seconds, and milliseconds
+                minutes = int(elapsed_time // 60)
+                seconds = int(elapsed_time % 60)
+                milliseconds = int((elapsed_time * 1000) % 1000)
+
+                print(f"Move made after: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                current_eval = eval
                 board_state_history.append([eval, torch.clone(board_state)])
                 player_turn = True
                 move_number += 1
