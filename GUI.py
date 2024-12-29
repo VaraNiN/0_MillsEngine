@@ -1,6 +1,8 @@
 import tkinter as tk
 
 #Courtesy of Co-Pilot
+#TODO: Draw the game board (probably with red and blue or sth)
+#TODO: Connect with actual game
 
 def on_click(event):
     x, y = event.x, event.y

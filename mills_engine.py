@@ -17,7 +17,8 @@ FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 LEGAL_MOVES_WEIGHT          = 0.3
 
 # TODO: Rewrite everything for numpy and add multi-threading
-# TODO: Make graphical interface
+# TODO: Connect graphical interface
+# TODO: Use AI to train weights
 
 
 
