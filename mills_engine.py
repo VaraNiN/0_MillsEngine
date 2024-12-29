@@ -19,8 +19,6 @@ LEGAL_MOVES_WEIGHT          = 0.3
 
 ### This timer class is based on that of Gertjan van den Burg
 ### See their article at https://gertjanvandenburg.com/blog/timing_decorator/
-import time
-
 class Timer(object):
     def __init__(self):
         self.timers = {}
@@ -58,12 +56,13 @@ class Timer(object):
         max_name_length = max(len(name) for name in self.timers.keys())
         
         # Print the header with dynamic width for function names
-        print(f"{'Function':<{max_name_length}} {'Time (s)':<10} {'Calls':<10}")
-        print("-" * (max_name_length + 30))
+        print(f"{'Function':<{max_name_length}} {'Time (s)':<10} {'Calls':<10} {'Avg Time (µs)':<15}")
+        print("-" * (max_name_length + 45))
         
         # Print each function's timing report with dynamic width for function names
         for name, duration in self.timers.items():
-            print(f"{name:<{max_name_length}} {duration:<10.4f} {self.call_counts[name]:<10}")
+            avg_time_us = (duration / self.call_counts[name]) * 1e6
+            print(f"{name:<{max_name_length}} {duration:<10.4f} {self.call_counts[name]:<10} {avg_time_us:<15.2f}")
 
 TIMER = Timer()
 
@@ -143,9 +142,9 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
     print(board_template.format(*input))
 
 @timer_wrap
-def count_stones(state : torch.tensor) -> List[int]:
-    white = int(torch.sum(state == 1).item())
-    black = int(torch.sum(state == -1).item())
+def count_stones(state: torch.tensor) -> List[int]:
+    white = (state == 1).sum().item()
+    black = (state == -1).sum().item()
     return [white, black]
 
 @timer_wrap
@@ -309,10 +308,7 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
 
 @timer_wrap
 def check_mill(state: torch.tensor, move: tuple[int]) -> bool:
-    colour = int(state[move])
-    if colour not in {1, -1}:
-        red("Something went wrong while checking if a mill occurred. state[move] = 0")
-        exit()
+    colour = state[move]
         
     ring, x, y = move
 
@@ -603,6 +599,6 @@ def book_moves(state: torch.tensor, colour : int) -> Any:
     else:
         for j, k in [[0, 1], [1, 0], [2, 1], [1, 2]]:
             if state[1, j, k] == 0:
-                return np.nan, new_board_state_early(state, tuple((1, j, k)), colour)[0], 1
+                return 0., new_board_state_early(state, tuple((1, j, k)), colour)[0], 1
             
     return None

@@ -11,7 +11,7 @@ def red(string : str) -> None:
 
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS = 2e5
+MAX_APPROX_EVAL_CALLS = 5e4
 APPROC_PRUNING_FACTOR = 1.5        # How good alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = torch.zeros((3,3,3), dtype=int)
@@ -215,7 +215,7 @@ try:
                 finished_flag = True
 
 except KeyboardInterrupt:
-    print()
+    print("\n")
     pass
 
 mills.print_report()
