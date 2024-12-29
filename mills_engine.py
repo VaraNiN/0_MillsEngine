@@ -5,12 +5,15 @@ import time
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
 
+PLAYER_COLOUR = 1
+MIN_DEPTH = 4
+MAX_DEPTH = 7
+MAX_APPROX_EVAL_CALLS = 1e4
+
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 LEGAL_MOVES_WEIGHT          = 0.3
-MIN_DEPTH = 4
-MAX_DEPTH = 7
 
 # TODO: Rewrite everything for numpy and add multi-threading
 
@@ -534,13 +537,8 @@ def minimax_mid(node : torch.tensor,
 board_state = torch.zeros((3,3,3), dtype=int)
 board_state_history = [[np.nan, torch.clone(board_state)]]
 
-PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS = 1e3
 BASE_ALPHA = float('-inf')
 BASE_BETA = float('inf')
-
-
-
 
 if PLAYER_COLOUR == 1:
     player_turn = True
