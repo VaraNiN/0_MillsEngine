@@ -4,6 +4,10 @@ import re
 import time
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
+import gui
+
+GUI = gui.MillsBoardGUI()
+GUI.initialize()
 
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
@@ -13,7 +17,6 @@ LEGAL_MOVES_WEIGHT          = 0.3
 # TODO: Rewrite everything for numpy and add multi-threading
 # TODO: Connect graphical interface
 # TODO: Use AI to train weights
-
 
 
 
