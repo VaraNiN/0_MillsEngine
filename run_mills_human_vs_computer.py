@@ -6,8 +6,6 @@ from typing import List, Any
 from colorama import Fore as cf, Style as cs
 import mills_engine as mills
 
-TIMER = mills.Timer()
-
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
@@ -220,4 +218,4 @@ except KeyboardInterrupt:
     print()
     pass
 
-TIMER.print_report()
+mills.print_report()

@@ -19,6 +19,8 @@ LEGAL_MOVES_WEIGHT          = 0.3
 
 ### This timer class is based on that of Gertjan van den Burg
 ### See their article at https://gertjanvandenburg.com/blog/timing_decorator/
+import time
+
 class Timer(object):
     def __init__(self):
         self.timers = {}
@@ -45,7 +47,11 @@ class Timer(object):
         self.add_to_timer(self._stack.pop(0), time.time() - self.start)
         self.start = time.time()
 
-    def print_report(self):
+    def report(self):
+        if not self.timers:
+            print("No timers to report.")
+            return
+        
         print("Timing Report:")
         
         # Calculate the maximum length of function names
@@ -69,6 +75,9 @@ def timer_wrap(func):
         TIMER.pop()
         return ans
     return wrapper
+
+def print_report():
+    TIMER.report()
 
 
 def red(string : str) -> None:
