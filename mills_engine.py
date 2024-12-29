@@ -594,6 +594,6 @@ def book_moves(state: torch.tensor, colour : int) -> Any:
     else:
         for j, k in [[0, 1], [1, 0], [2, 1], [1, 2]]:
             if state[1, j, k] == 0:
-                return np.nan, new_board_state_early(state, tuple(1, j, k), colour), 1
+                return np.nan, new_board_state_early(state, tuple((1, j, k)), colour)[0], 1
             
     return None
