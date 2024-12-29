@@ -1,14 +1,12 @@
 import tkinter as tk
 
-#Courtesy of Co-Pilot
-#TODO: Draw the game board (probably with red and blue or sth)
-#TODO: Connect with actual game
-
-def on_click(event):
+def on_click(event, root, result, inputs):
     x, y = event.x, event.y
     vicinity = get_vicinity(x, y)
-    if vicinity:
-        print(f"Clicked at: {vicinity}")
+    if vicinity and len(result) < inputs:
+        result.append(vicinity)
+        if len(result) == inputs:
+            root.quit()
 
 def get_vicinity(x, y):
     vertices = {
@@ -57,7 +55,7 @@ def create_mills_board(canvas, width, height):
     for vx, vy in vertices:
         canvas.create_oval(vx-20, vy-20, vx+20, vy+20, fill="black")
 
-def main():
+def input(len : int = 1):
     root = tk.Tk()
     root.title("Mills Board Click Tracker")
 
@@ -67,9 +65,15 @@ def main():
     canvas.pack()
 
     create_mills_board(canvas, width, height)
-    canvas.bind("<Button-1>", on_click)
+
+    result = []
+    canvas.bind("<Button-1>", lambda event: on_click(event, root, result, len))
 
     root.mainloop()
+    root.destroy()
+
+    return result if result else None
 
 if __name__ == "__main__":
-    main()
+    index = input(2)
+    print(f"Clicked index: {index}")

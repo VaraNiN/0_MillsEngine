@@ -6,8 +6,8 @@ from typing import List, Any
 from colorama import Fore as cf, Style as cs
 import gui
 
-GUI = gui.MillsBoardGUI()
-GUI.initialize()
+print(gui.input(1))
+print(gui.input(2))
 
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
