@@ -11,8 +11,8 @@ def red(string : str) -> None:
 
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS = 5e4
-APPROC_PRUNING_FACTOR = 1.5        # How good alpha-beta pruning works. Worst case = 1.; Best Case = 2.
+MAX_APPROX_EVAL_CALLS = 5e4        # How many eval calls are approximately allowed
+APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = torch.zeros((3,3,3), dtype=int)
 board_state_history = [[np.nan, torch.clone(board_state)]]
@@ -115,7 +115,7 @@ try:
                     player_turn = False
                     move_number += 1
             else: # Computer Move
-                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS, APPROC_PRUNING_FACTOR)
+                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
                 if PLAYER_COLOUR == 1:
                     print("Computer places black stone %i / 9 with search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}"))
                 else:
@@ -185,7 +185,7 @@ try:
                     player_turn = False
                     move_number += 1
             else: # Computer Move
-                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROC_PRUNING_FACTOR)
+                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
                 print("Computer thinking with depth %i (~%s calls)" %(depth, f"{approx_calls:,}"))
                 start_time = time.time()
                 eval, board_state, calls = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
