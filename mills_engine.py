@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import re
 import time
 from typing import List, Any
@@ -460,71 +461,139 @@ def is_terminal_node(state : torch.tensor,
     return 0 # Still undecided
 
 @timer_wrap
-def minimax_early(node : torch.tensor, 
-                depth : int, 
-                alpha : float, 
-                beta : float, 
-                maximizingPlayer : bool) -> tuple[float, torch.tensor]:
-    if depth == 0 or abs(is_terminal_node(node, is_early_game = True))==1:
-        return evaluate_position(node, is_early_game = True), node
+def minimax_early(node: torch.tensor, 
+                  depth: int, 
+                  alpha: float, 
+                  beta: float, 
+                  maximizingPlayer: bool, 
+                  call_count: int = 0) -> tuple[float, torch.tensor, int]:
+    call_count += 1  # Increment the counter each time the function is called
+
+    if depth == 0 or abs(is_terminal_node(node, is_early_game=True)) == 1:
+        return evaluate_position(node, is_early_game=True), node, call_count
 
     best_node = None
 
     if maximizingPlayer:
         maxEval = float('-inf')
         for child in get_children_early(node, 1):
-            eval, _ = minimax_early(child, depth - 1, alpha, beta, False)
+            eval, _, call_count = minimax_early(child, depth - 1, alpha, beta, False, call_count)
             if eval > maxEval:
                 maxEval = eval
                 best_node = child
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break  # Beta cut-off
-        return maxEval, best_node
+        return maxEval, best_node, call_count
     else:
         minEval = float('inf')
         for child in get_children_early(node, -1):
-            eval, _ = minimax_early(child, depth - 1, alpha, beta, True)
+            eval, _, call_count = minimax_early(child, depth - 1, alpha, beta, True, call_count)
             if eval < minEval:
                 minEval = eval
                 best_node = child
             beta = min(beta, eval)
             if beta <= alpha:
                 break  # Alpha cut-off
-        return minEval, best_node
+        return minEval, best_node, call_count
     
 @timer_wrap
-def minimax_mid(node : torch.tensor, 
-                depth : int, 
-                alpha : float, 
-                beta : float, 
-                maximizingPlayer : bool,
-                maximinzing_end : bool,
-                minimizing_end : bool) -> tuple[float, torch.tensor]:
-    if depth == 0 or abs(is_terminal_node(node))==1:
-        return evaluate_position(node), node
+def minimax_mid(node: torch.tensor, 
+                depth: int, 
+                alpha: float, 
+                beta: float, 
+                maximizingPlayer: bool,
+                maximinzing_end: bool,
+                minimizing_end: bool,
+                call_count: int = 0) -> tuple[float, torch.tensor, int]:
+    call_count += 1  # Increment the counter each time the function is called
+
+    if depth == 0 or abs(is_terminal_node(node)) == 1:
+        return evaluate_position(node), node, call_count
 
     best_node = None
 
     if maximizingPlayer:
         maxEval = float('-inf')
         for child in get_children_mid(node, 1, maximinzing_end):
-            eval, _ = minimax_mid(child, depth - 1, alpha, beta, False, maximinzing_end, minimizing_end)
+            eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count)
             if eval > maxEval:
                 maxEval = eval
                 best_node = child
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break  # Beta cut-off
-        return maxEval, best_node
+        return maxEval, best_node, call_count
     else:
         minEval = float('inf')
         for child in get_children_mid(node, -1, minimizing_end):
-            eval, _ = minimax_mid(child, depth - 1, alpha, beta, True, maximinzing_end, minimizing_end)
+            eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count)
             if eval < minEval:
                 minEval = eval
                 best_node = child
             beta = min(beta, eval)
             if beta <= alpha:
                 break  # Alpha cut-off
-        return minEval, best_node
+        return minEval, best_node, call_count
+    
+
+@timer_wrap
+def calc_depth_for_eval_calls(state : torch.tensor, 
+                              move_counter : int, 
+                              late_game_white : bool, 
+                              late_game_black : bool, 
+                              max_calls : int = int(1e5), 
+                              pruning_factor : float = 1.5) -> List[int]:
+    approx_calls_all = []
+    depths = []
+    depth_count = 1
+    approx_calls = 0
+    while approx_calls < max_calls:
+        if move_counter < 4:
+            approx_calls = ((len(get_children_early(state, 1)) + len(get_children_early(state, -1)))/2.)**(depth_count/pruning_factor) * (1.+2.**(depth_count-4))
+        elif move_counter < 19:
+            approx_calls = ((len(get_children_early(state, 1)) + len(get_children_early(state, -1)))/2.)**(depth_count/pruning_factor)
+        else:
+            approx_calls = ((len(get_children_mid(state, 1, late_game_white)) + len(get_children_mid(state, -1, late_game_black)))/2.)**(depth_count/pruning_factor)
+        approx_calls_all.append(approx_calls)
+        depths.append(depth_count)
+        depth_count += 1
+    return depths[-2], int(np.floor(approx_calls_all[-2]))
+
+@timer_wrap
+def check_possible_mills(state: torch.tensor, colour: int) -> List:
+    possible_mills = set()
+    positions = torch.nonzero(state == colour).tolist()
+    
+    for i, j, k in positions:
+        if j == 1 or k == 1:
+            if state[i - 1, j, k] == colour:
+                if state[i - 2, j, k] == 0:
+                    possible_mills.add(((i - 2) % 3, j, k))
+                elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
+                    possible_mills.add(((i - 1) % 3, j, k))
+            if state[i, j - 1, k] == colour:
+                if state[i, j - 2, k] == 0:
+                    possible_mills.add((i, (j - 2) % 3, k))
+                elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
+                    possible_mills.add((i, (j - 1) % 3, k))
+            if state[i, j, k - 1] == colour:
+                if state[i, j, k - 2] == 0:
+                    possible_mills.add((i, j, (k - 2) % 3))
+                elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
+                    possible_mills.add((i, j, (k - 1) % 3))
+    
+    return list(possible_mills)
+
+@timer_wrap
+def book_moves(state: torch.tensor, colour : int) -> Any:
+    if len(check_possible_mills(state, colour)) > 0:
+        return None
+    elif len(check_possible_mills(state, -colour)) > 0:
+        return None
+    else:
+        for j, k in [[0, 1], [1, 0], [2, 1], [1, 2]]:
+            if state[1, j, k] == 0:
+                return np.nan, new_board_state_early(state, tuple(1, j, k), colour), 1
+            
+    return None

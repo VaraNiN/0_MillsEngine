@@ -6,16 +6,15 @@ from typing import List, Any
 from colorama import Fore as cf, Style as cs
 import mills_engine as mills
 
+TIMER = mills.Timer()
 
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
 
 PLAYER_COLOUR = 1
-EARLY_DEPTH = 5
-MID_DEPTH = 7
-END_DEPTH = 6
-MAX_APPROX_EVAL_CALLS = 1e4
+MAX_APPROX_EVAL_CALLS = 2e5
+APPROC_PRUNING_FACTOR = 1.5        # How good alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = torch.zeros((3,3,3), dtype=int)
 board_state_history = [[np.nan, torch.clone(board_state)]]
@@ -75,6 +74,8 @@ if False:
     move_number = 46
     board_state_history.append([np.nan, torch.clone(board_state)])
 
+MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
+
 try:
     while not finished_flag:
         mills.show_position(board_state)
@@ -116,12 +117,16 @@ try:
                     player_turn = False
                     move_number += 1
             else: # Computer Move
+                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS, APPROC_PRUNING_FACTOR)
                 if PLAYER_COLOUR == 1:
-                    print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, EARLY_DEPTH))
+                    print("Computer places black stone %i / 9 with search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}"))
                 else:
-                    print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, EARLY_DEPTH))
+                    print("Computer places white stone %i / 9 with search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}"))
                 start_time = time.time()
-                eval, board_state = mills.minimax_early(board_state, EARLY_DEPTH, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                if mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
+                    eval, board_state, calls = mills.book_moves(board_state, -PLAYER_COLOUR)
+                else:
+                    eval, board_state, calls = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
 
@@ -130,7 +135,7 @@ try:
                 seconds = int(elapsed_time % 60)
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
-                print(f"Move made after: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
                 current_eval = eval
                 board_state_history.append([eval, torch.clone(board_state)])
                 player_turn = True
@@ -143,6 +148,8 @@ try:
             if check_win == -PLAYER_COLOUR:
                 print("The computer won. Better Luck next time!!")
                 finished_flag = True
+
+
 
         # Mid and End Game
         else:
@@ -180,13 +187,10 @@ try:
                     player_turn = False
                     move_number += 1
             else: # Computer Move
-                if endgame_white or endgame_black:
-                    depth = END_DEPTH
-                else:
-                    depth = MID_DEPTH
-                print("Computer thinking with depth %i" %depth)
+                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROC_PRUNING_FACTOR)
+                print("Computer thinking with depth %i (~%s calls)" %(depth, f"{approx_calls:,}"))
                 start_time = time.time()
-                eval, board_state = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+                eval, board_state, calls = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
 
@@ -195,7 +199,7 @@ try:
                 seconds = int(elapsed_time % 60)
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
-                print(f"Move made after: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
                 current_eval = eval
                 board_state_history.append([eval, torch.clone(board_state)])
                 player_turn = True
@@ -216,4 +220,4 @@ except KeyboardInterrupt:
     print()
     pass
 
-mills.TIMER.print_report()
+TIMER.print_report()
