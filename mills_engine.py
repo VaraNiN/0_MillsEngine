@@ -6,8 +6,9 @@ from typing import List, Any
 from colorama import Fore as cf, Style as cs
 
 PLAYER_COLOUR = 1
-MIN_DEPTH = 4
-MAX_DEPTH = 7
+EARLY_DEPTH = 5
+MID_DEPTH = 7
+END_DEPTH = 6
 MAX_APPROX_EVAL_CALLS = 1e4
 
 CORNER_POSITION_MULTI = 1.0
@@ -16,6 +17,7 @@ FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 LEGAL_MOVES_WEIGHT          = 0.3
 
 # TODO: Rewrite everything for numpy and add multi-threading
+# TODO: Make graphical interface
 
 
 
@@ -633,21 +635,12 @@ try:
                     player_turn = False
                     move_number += 1
             else: # Computer Move
-                depth = 0
-                approx_calls = 1
-                while approx_calls < MAX_APPROX_EVAL_CALLS:
-                    approx_calls *= len(legal_moves_early(board_state)) - depth
-                    depth += 1
-                if depth < MIN_DEPTH:
-                    depth = MIN_DEPTH
-                if depth > MAX_DEPTH:
-                    depth = MAX_DEPTH
                 if PLAYER_COLOUR == 1:
-                    print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
+                    print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, EARLY_DEPTH))
                 else:
-                    print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
+                    print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, EARLY_DEPTH))
                 start_time = time.time()
-                eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                eval, board_state = minimax_early(board_state, EARLY_DEPTH, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
 
@@ -706,36 +699,10 @@ try:
                     player_turn = False
                     move_number += 1
             else: # Computer Move
-                depth = 0
-                approx_calls = 1
-                while approx_calls < MAX_APPROX_EVAL_CALLS:
-                    if PLAYER_COLOUR == 1:
-                        if depth % 2 == 0:
-                            if endgame_black:
-                                approx_calls *= len(legal_moves_end(board_state, -PLAYER_COLOUR))
-                            else:
-                                approx_calls *= len(legal_moves_mid(board_state, -PLAYER_COLOUR))
-                        else:
-                            if endgame_white:
-                                approx_calls *= len(legal_moves_end(board_state, PLAYER_COLOUR))
-                            else:
-                                approx_calls *= len(legal_moves_mid(board_state, PLAYER_COLOUR))
-                    else:
-                        if depth % 2 == 0:
-                            if endgame_white:
-                                approx_calls *= len(legal_moves_end(board_state, -PLAYER_COLOUR))
-                            else:
-                                approx_calls *= len(legal_moves_mid(board_state, -PLAYER_COLOUR))
-                        else:
-                            if endgame_black:
-                                approx_calls *= len(legal_moves_end(board_state, PLAYER_COLOUR))
-                            else:
-                                approx_calls *= len(legal_moves_mid(board_state, PLAYER_COLOUR))
-                    depth += 1
-                if depth < MIN_DEPTH:
-                    depth = MIN_DEPTH
-                if depth > MAX_DEPTH:
-                    depth = MAX_DEPTH
+                if endgame_white or endgame_black:
+                    depth = END_DEPTH
+                else:
+                    depth = MID_DEPTH
                 print("Computer thinking with depth %i" %depth)
                 start_time = time.time()
                 eval, board_state = minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
