@@ -10,8 +10,7 @@ THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
 LEGAL_MOVES_WEIGHT          = 0.3
 
-#TODO: Implement list of all past board states and the ability to go back to the previous board state
-#TODO: Add Openingbook where the program always sets in the four crossings first
+# TODO: Rewrite everything for numpy and add multi-threading
 
 
 
@@ -189,6 +188,8 @@ def input_next_remove(state: torch.tensor, colour: int) -> None:
 def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> tuple[int]:
     while True:
         move = input("Please provide the next move in the format (ring_from x_from y_from ring_to x_to y_to): ")
+        if move == "z" or move == "zzz":
+            return move
         if re.match(r'^\d \d \d \d \d \d$', move):
             ring_from, x_from, y_from, ring_to, x_to, y_to = map(int, move.split())
             all_coords = tuple(map(int, move.split()))
@@ -202,7 +203,7 @@ def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = Fals
                                 if is_late_game:
                                     break
                                 else:
-                                    if coords_to in get_neighbor_free(state)[ring_from][x_from][y_from]:
+                                    if list(coords_to) in get_neighbor_free(state)[ring_from][x_from][y_from]:
                                         break
                                     else:
                                         print("Invalid values. Cannot reach target from origin!")
@@ -335,7 +336,7 @@ def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None
         i, j, k = index
         if not (j == 1 and k == 1):
             for free in free_spaces[i][j][k]:
-                moves.append([(i, j, k), free])
+                moves.append([tuple((i, j, k)), tuple(free)])
     return moves
 
 @timer_wrap
@@ -420,12 +421,22 @@ def get_children_early(state : torch.tensor, colour : int):
     return children
 
 @timer_wrap
+def get_children_mid(state : torch.tensor, colour : int, is_late_game : bool = False):
+    children = []
+    if is_late_game:
+        moves = legal_moves_end(state, colour)
+    else:
+        moves = legal_moves_mid(state, colour)
+    for i, move in enumerate(moves):
+        children += new_board_state_mid(state, move, colour)
+    return children
+
+@timer_wrap
 def is_terminal_node(state : torch.tensor, 
                         is_early_game : bool = False,
                         free_spaces : Any  = None) -> int:
 
-    num_white_stones = torch.sum(state == 1)
-    num_black_stones = abs(torch.sum(state == -1))
+    num_white_stones, num_black_stones = count_stones(state)
     if free_spaces is None:
         free_spaces = get_neighbor_free(state)
     legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
@@ -480,31 +491,54 @@ def minimax_early(node : torch.tensor,
             if beta <= alpha:
                 break  # Alpha cut-off
         return minEval, best_node
+    
+@timer_wrap
+def minimax_mid(node : torch.tensor, 
+                depth : int, 
+                alpha : float, 
+                beta : float, 
+                maximizingPlayer : bool,
+                maximinzing_end : bool,
+                minimizing_end : bool) -> tuple[float, torch.tensor]:
+    if depth == 0 or abs(is_terminal_node(node))==1:
+        return evaluate_position(node), node
+
+    best_node = None
+
+    if maximizingPlayer:
+        maxEval = float('-inf')
+        for child in get_children_mid(node, 1, maximinzing_end):
+            eval, _ = minimax_mid(child, depth - 1, alpha, beta, False, maximinzing_end, minimizing_end)
+            if eval > maxEval:
+                maxEval = eval
+                best_node = child
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break  # Beta cut-off
+        return maxEval, best_node
+    else:
+        minEval = float('inf')
+        for child in get_children_mid(node, -1, minimizing_end):
+            eval, _ = minimax_mid(child, depth - 1, alpha, beta, True, maximinzing_end, minimizing_end)
+            if eval < minEval:
+                minEval = eval
+                best_node = child
+            beta = min(beta, eval)
+            if beta <= alpha:
+                break  # Alpha cut-off
+        return minEval, best_node
 
 
 board_state = torch.zeros((3,3,3), dtype=int)
 board_state_history = [[np.nan, torch.clone(board_state)]]
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS = 1e4
+MAX_APPROX_EVAL_CALLS = 1e3
 BASE_ALPHA = float('-inf')
 BASE_BETA = float('inf')
 
 
-""" board_state[2, 1, 2] = 1
-board_state[1, 1, 2] = 1
-board_state[1, 2, 1] = 1
-board_state[0, 1, 2] = 1
-board_state[2, 2, 0] = 1
-board_state[2, 2, 2] = 1
-board_state[2, 0, 2] = 1
 
-board_state[1, 0, 0] = -1
-board_state[1, 0, 1] = -1
-board_state[1, 0, 2] = -1
-board_state[1, 2, 0] = -1
-board_state[0, 0, 1] = -1
-board_state[1, 2, 2] = -1 """
 
 if PLAYER_COLOUR == 1:
     player_turn = True
@@ -515,27 +549,132 @@ else:
 
 
 move_number = 0
+finished_flag = False
+endgame_white = False
+endgame_black = False
+
+if False:
+    board_state[0, 2, 0] = 1
+    board_state[1, 1, 0] = 1
+    board_state[1, 2, 0] = 1
+    board_state[1, 2, 1] = 1
+    board_state[1, 0, 2] = 1
+    board_state[1, 2, 2] = 1
+    board_state[2, 2, 1] = 1
+    board_state[2, 1, 2] = 1
+    board_state[2, 2, 2] = 1
+
+    board_state[0, 1, 0] = -1
+    board_state[0, 2, 1] = -1
+    board_state[0, 0, 2] = -1
+    board_state[1, 0, 0] = -1
+    board_state[1, 0, 1] = -1
+    board_state[1, 1, 2] = -1
+    board_state[2, 0, 0] = -1
+    board_state[2, 2, 0] = -1
+
+    move_number = 18
+    board_state_history.append([np.nan, torch.clone(board_state)])
+
+
+if True:
+    board_state[1, 0, 2] = 1
+    board_state[1, 2, 0] = 1
+    board_state[1, 2, 2] = 1
+
+    board_state[0, 0, 1] = -1
+    board_state[1, 0, 1] = -1
+    board_state[2, 0, 1] = -1
+    board_state[0, 1, 0] = -1
+    board_state[1, 1, 0] = -1
+
+    move_number = 46
+    board_state_history.append([np.nan, torch.clone(board_state)])
+
 try:
-    while move_number < 18:
+    while not finished_flag:
         show_position(board_state)
-        print("Move %i / 18:" %(move_number + 1))
-        if player_turn:
-            if PLAYER_COLOUR == 1:
-                print("Please place white stone %i / 9" %(move_number // 2 + 1))
-            else:
-                print("Please place black stone %i / 9" %(move_number // 2 + 1))
-            move = input_next_add(board_state, PLAYER_COLOUR)
-            if move == "z":
-                if move_number >= 2:
+        print("Move %i:" %(move_number + 1))
+
+        # Early Game
+        if move_number < 18:
+            if player_turn: # Player Move
+                if PLAYER_COLOUR == 1:
+                    print("Please place white stone %i / 9" %(move_number // 2 + 1))
+                else:
+                    print("Please place black stone %i / 9" %(move_number // 2 + 1))
+                move = input_next_add(board_state, PLAYER_COLOUR)
+                if move == "z":
+                    if move_number >= 2:
+                        move_number -= 2
+                        board_state = torch.clone(board_state_history[move_number][1])
+                        board_state_history.pop(-1)
+                        board_state_history.pop(-1)
+                        print("Going back a full move.")
+                    else:
+                        red("Cannot go further back.")
+                elif move == "zzz":
+                    if move_number >= 1:
+                        move_number -= 1
+                        board_state = torch.clone(board_state_history[move_number][1])
+                        board_state_history.pop(-1)
+                        print("Going back half a move.")
+                        red("This switches sides!")
+                        PLAYER_COLOUR *= -1
+                        COMPUTER_MAX = not COMPUTER_MAX
+                    else:
+                        red("Cannot go further back.")
+                else:
+                    if check_mill(board_state, move):
+                        show_position(board_state)
+                        input_next_remove(board_state, PLAYER_COLOUR)
+                    board_state_history.append([np.nan, torch.clone(board_state)])
+                    player_turn = False
+                    move_number += 1
+            else: # Computer Move
+                depth = 0
+                approx_calls = 1
+                while approx_calls < MAX_APPROX_EVAL_CALLS:
+                    approx_calls *= len(legal_moves_early(board_state)) - depth
+                    depth += 1
+                if PLAYER_COLOUR == 1:
+                    print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
+                else:
+                    print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
+                eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                board_state_history.append([eval, torch.clone(board_state)])
+                player_turn = True
+                move_number += 1
+            # Check for win
+            check_win = is_terminal_node(board_state, is_early_game = True)
+            if check_win == PLAYER_COLOUR:
+                print("Congratulations! You won!")
+                finished_flag = True
+            if check_win == -PLAYER_COLOUR:
+                print("The computer won. Better Luck next time!!")
+                finished_flag = True
+
+        # Mid and End Game
+        else:
+            # Check for end game
+            white_stones_left, black_stones_left = count_stones(board_state)
+            if white_stones_left <= 3:
+                endgame_white = True
+            if black_stones_left <= 3:
+                endgame_black = True
+
+            if player_turn: # Player Move
+                if PLAYER_COLOUR == 1:
+                    move = input_next_move(board_state, PLAYER_COLOUR, endgame_white)
+                else:
+                    move = input_next_move(board_state, PLAYER_COLOUR, endgame_black)
+                if move == "z":
                     move_number -= 2
                     board_state = torch.clone(board_state_history[move_number][1])
                     board_state_history.pop(-1)
                     board_state_history.pop(-1)
                     print("Going back a full move.")
-                else:
-                    red("Cannot go further back.")
-            elif move == "zzz":
-                if move_number >= 1:
+                elif move == "zzz":
                     move_number -= 1
                     board_state = torch.clone(board_state_history[move_number][1])
                     board_state_history.pop(-1)
@@ -544,34 +683,40 @@ try:
                     PLAYER_COLOUR *= -1
                     COMPUTER_MAX = not COMPUTER_MAX
                 else:
-                    red("Cannot go further back.")
-            else:
-                if check_mill(board_state, move):
-                    show_position(board_state)
-                    input_next_remove(board_state, PLAYER_COLOUR)
-                board_state_history.append([np.nan, torch.clone(board_state)])
-                player_turn = False
+                    if check_mill(board_state, move):
+                        show_position(board_state)
+                        input_next_remove(board_state, PLAYER_COLOUR)
+                    board_state_history.append([np.nan, torch.clone(board_state)])
+                    player_turn = False
+                    move_number += 1
+            else: # Computer Move
+                depth = 0
+                approx_calls = 1
+                while approx_calls < MAX_APPROX_EVAL_CALLS:
+                    if depth % 2 == 0:
+                        approx_calls *= len(legal_moves_mid(board_state, -PLAYER_COLOUR))
+                    else:
+                        approx_calls *= len(legal_moves_mid(board_state, PLAYER_COLOUR))
+                    depth += 1
+                print("Computer thinking with depth %i" %depth)
+                eval, board_state = minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+                board_state_history.append([eval, torch.clone(board_state)])
+                player_turn = True
                 move_number += 1
-        else:
-            depth = 0
-            approx_calls = 1
-            while approx_calls < MAX_APPROX_EVAL_CALLS:
-                approx_calls *= len(legal_moves_early(board_state)) - depth
-                depth += 1
-            if PLAYER_COLOUR == 1:
-                print("Computer places black stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
-            else:
-                print("Computer places white stone %i / 9 with search depth %i" %(move_number // 2 + 1, depth))
-            eval, board_state = minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
-            board_state_history.append([eval, torch.clone(board_state)])
-            player_turn = True
-            move_number += 1
+
+            # Check for win
+            check_win = is_terminal_node(board_state)
+            if check_win == PLAYER_COLOUR:
+                show_position(board_state)
+                print("Congratulations! You won!")
+                finished_flag = True
+            if check_win == -PLAYER_COLOUR:
+                show_position(board_state)
+                print("The computer won. Better Luck next time!!")
+                finished_flag = True
+
 except KeyboardInterrupt:
     print()
     pass
-
-for i, bb in enumerate(board_state_history):
-    print(i)
-    show_position(bb[1])
 
 TIMER.print_report()
