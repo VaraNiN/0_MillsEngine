@@ -17,7 +17,7 @@ def red(string : str) -> None:
 
 FOLDER = "Games/"
 
-PLAYER_COLOUR = 1
+PLAYER_COLOUR = -1
 MAX_APPROX_EVAL_CALLS = 5e4        # How many eval calls are approximately allowed
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
@@ -47,10 +47,17 @@ if False:
     move_number = len(board_state_history) - 1
 
 
-if True:
+if False:
     board_state_history = torch.load("Sample_Late.pt")
     board_state = torch.clone(board_state_history[-1])
     move_number = len(board_state_history) - 1
+
+
+
+
+
+
+### Logic start
 
 MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
 
@@ -59,12 +66,10 @@ def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, dep
     q.put(minimax_result)
     event.set()
 
-
 def run_minimax_mid(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black):
     minimax_result = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
     q.put(minimax_result)
     event.set()
-
 
 # Function to check if the minimax computation is complete
 def check_minimax_result(root : tk.Tk, event : threading.Event):
@@ -179,7 +184,7 @@ try:
                 if PLAYER_COLOUR == 1:
                     move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_white, move_number + 1, current_eval)
                 else:
-                    move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_black)
+                    move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_black, move_number + 1, current_eval)
                 if move == "ABORT":
                     mills.print_report()
                     torch.save(board_state_history, FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.pt"))
@@ -209,6 +214,7 @@ try:
                 depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
                 display = "Computer thinking with depth %i (~%s calls)" %(depth, f"{approx_calls:,}")
                 print(display)
+
                 start_time = time.time()
                 event = threading.Event()
                 q = queue.Queue()
@@ -219,8 +225,8 @@ try:
                 root.mainloop()
                 minimax_thread.join()
                 eval, board_state, calls = q.get()
-                #eval, board_state, calls = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
                 end_time = time.time()# Calculate the elapsed time
+
                 elapsed_time = end_time - start_time
 
                 # Convert elapsed time to minutes, seconds, and milliseconds
