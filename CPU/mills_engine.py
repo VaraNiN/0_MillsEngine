@@ -4,6 +4,7 @@ import time
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
 import gui
+import threading
 
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.1
@@ -502,6 +503,56 @@ def minimax_early(node: np.array,
             if beta <= alpha:
                 break  # Alpha cut-off
         return minEval, best_node, call_count
+    
+@timer_wrap
+def parallel_minimax_early(node: np.array, 
+                            depth: int, 
+                            alpha: float, 
+                            beta: float, 
+                            maximizingPlayer: bool, 
+                            call_count: int = 0) -> tuple[float, np.array, int]:
+    if maximizingPlayer:
+        children = get_children_early(node, 1)
+    else:
+        children = get_children_early(node, -1)
+
+    threads = []
+    results = [None] * len(children)
+    
+    def thread_function(index, child, depth, alpha, beta, maximizingPlayer):
+        results[index] = minimax_early(child, depth - 1, alpha, beta, maximizingPlayer)
+    
+    for i, child in enumerate(children):
+        thread = threading.Thread(target=thread_function, args=(i, child, depth, alpha, beta, maximizingPlayer))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+
+    calls = 0
+    if maximizingPlayer:
+        best_result = alpha
+        for i in range(len(results)):
+            print(results[i][0])
+            show_position(children[i])
+            print("\n")
+            calls += results[i][2]
+            if results[i][0] > best_result:
+                best_result = results[i][0]
+                best_node = children[i]
+    else:
+        best_result = beta
+        for i in range(len(results)):
+            print(results[i][0])
+            show_position(children[i])
+            print("\n")
+            calls += results[i][2]
+            if results[i][0] < best_result:
+                best_result = results[i][0]
+                best_node = children[i]
+
+    return best_result, best_node, calls
     
 @timer_wrap
 def minimax_mid(node: np.array, 

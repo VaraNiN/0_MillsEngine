@@ -17,7 +17,8 @@ def red(string : str) -> None:
 FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS = 5e4        # How many eval calls are approximately allowed
+MAX_THREADS = 24                   # Maximum CPU Threads
+MAX_APPROX_EVAL_CALLS = 2e4        # How many eval calls are approximately allowed
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = np.zeros((3,3,3), dtype=int)
@@ -39,7 +40,7 @@ finished_flag = False
 endgame_white = False
 endgame_black = False
 
-if True:
+if False:
     board_state_history = np.load("CPU/Sample_Mid.npy")
     board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
     board_state = np.copy(board_state_history[-1])
@@ -47,10 +48,10 @@ if True:
 
 
 if False:
-    board_state_history = np.load("Sample_Late.pt")
-    board_state = np.clone(board_state_history[-1])
+    board_state_history = np.load("CPU/Sample_Late.npy")
+    board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
+    board_state = np.copy(board_state_history[-1])
     move_number = len(board_state_history) - 1
-
 
 
 
@@ -60,8 +61,9 @@ if False:
 
 MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
 
-def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX):
-    minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, threads):
+    #minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+    minimax_result = mills.minimax_early_multi(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, max_workers=threads)
     q.put(minimax_result)
     event.set()
 
@@ -135,15 +137,20 @@ try:
                 if mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
                     eval, board_state, calls = mills.book_moves(board_state, -PLAYER_COLOUR)
                 else:
-                    event = threading.Event()
-                    q = queue.Queue()
-                    minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX))
-                    minimax_thread.start()
-                    root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
-                    root.after(100, check_minimax_result, root, event)
-                    root.mainloop()
-                    minimax_thread.join()
-                    eval, board_state, calls = q.get()
+                    if False:
+                        event = threading.Event()
+                        q = queue.Queue()
+                        minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, MAX_THREADS))
+                        minimax_thread.start()
+                        root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
+                        root.after(100, check_minimax_result, root, event)
+                        root.mainloop()
+                        minimax_thread.join()
+                        eval, board_state, calls = q.get()
+                    else:
+                        #eval, board_state, calls = mills.minimax_early_multi(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, max_workers=MAX_THREADS)
+                        eval, board_state, calls = mills.parallel_minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                        #eval, board_state, calls = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
                 
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
