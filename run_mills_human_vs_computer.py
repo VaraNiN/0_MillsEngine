@@ -4,7 +4,12 @@ import re
 import time
 from typing import List, Any
 from colorama import Fore as cf, Style as cs
+import threading
+import queue
 import mills_engine as mills
+import tkinter as tk
+import gui
+
 
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
@@ -74,6 +79,23 @@ if False:
 
 MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
 
+def run_minimax_early(q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event : threading.Event):
+    minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+    q.put(minimax_result)
+    print("Test")
+    event.set()
+
+def run_minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event):
+    mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+    event.set()
+
+# Function to check if the minimax computation is complete
+def check_minimax_result(root : tk.Tk, event : threading.Event):
+    if event.is_set():
+        root.destroy() # Close the show_board window
+    else:
+        root.after(100, check_minimax_result, root, event)# Check again after 100 ms
+
 try:
     while not finished_flag:
         mills.show_position(board_state)
@@ -117,14 +139,27 @@ try:
             else: # Computer Move
                 depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
                 if PLAYER_COLOUR == 1:
-                    print("Computer places black stone %i / 9 with search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}"))
+                    display = "Computer places black stone %i / 9\nwith search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}")
+                    print(display)
                 else:
-                    print("Computer places white stone %i / 9 with search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}"))
+                    display = "Computer places white stone %i / 9\nwith search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}")
+                    print(display)
                 start_time = time.time()
                 if mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
                     eval, board_state, calls = mills.book_moves(board_state, -PLAYER_COLOUR)
                 else:
-                    eval, board_state, calls = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                    event = threading.Event()
+                    q = queue.Queue()
+                    minimax_thread = threading.Thread(target = run_minimax_early, args=(q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event))
+                    minimax_thread.start()
+                    root = gui.show_board(display, board_state)
+                    root.after(100, check_minimax_result, root, event)
+                    root.mainloop()
+                    #eval, board_state, calls = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                    minimax_thread.join()
+                    eval, board_state, calls = q.get()
+                    #root.mainloop()
+                
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
 
@@ -134,6 +169,7 @@ try:
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
                 print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+
                 current_eval = eval
                 board_state_history.append([eval, torch.clone(board_state)])
                 player_turn = True

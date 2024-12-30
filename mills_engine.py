@@ -6,9 +6,6 @@ from typing import List, Any
 from colorama import Fore as cf, Style as cs
 import gui
 
-print(gui.input(1))
-print(gui.input(2))
-
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.2
 FOUR_NEIGH_POSITIONS_MULTI  = 1.3
@@ -152,27 +149,23 @@ def count_stones(state: torch.tensor) -> List[int]:
 
 @timer_wrap
 def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
+    invalid_flag = False
     while True:
-        move = input("Where should a stone be added? (Format: ring x y): ")
+        if not invalid_flag:
+            move = gui.input(1, "Where should a stone be added?", state)[0]
+        else:
+            move = gui.input(1, "There is already a stone there!\nWhere should a stone be added?", state)[0]
+
         if move == "z" or move == "zzz":
             return move
-        elif re.match(r'^\d \d \d$', move):
-            coords = tuple(map(int, move.split()))
-            if all(n in {0, 1, 2} for n in coords):
-                if not (coords[1] == 1 and coords[2] == 1):
-                    if state[coords] == 0:
-                        break
-                    else:
-                        print("Invalid values. There is already a stone there.")
-                else:
-                    print("Invalid values. x and y cannot both be 1")
-            else:
-                print("Invalid values. All have to be 0, 1 or 2")
         else:
-            print("Invalid format.")
+            if state[move] == 0:
+                break
+            else:
+                invalid_flag = True
 
-    state[coords] = colour
-    return coords
+    state[move] = colour
+    return move
 
 @timer_wrap
 def input_next_remove(state: torch.tensor, colour: int) -> None:
