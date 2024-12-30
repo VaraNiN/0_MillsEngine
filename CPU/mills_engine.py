@@ -82,7 +82,7 @@ def print_report():
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
-#@timer_wrap
+@timer_wrap
 def check_position(state: np.array) -> bool:
     if state.shape != (3, 3, 3):
         red("Warning: Invalid Board State - Incorrect size")
@@ -111,7 +111,7 @@ def check_position(state: np.array) -> bool:
     
     return True
 
-#@timer_wrap
+@timer_wrap
 def show_position(state : np.array, check_validity : bool = True, replace_symbols : bool = True) -> None:
     if check_validity:
         if not check_position(state):
@@ -141,13 +141,13 @@ def show_position(state : np.array, check_validity : bool = True, replace_symbol
     
     print(board_template.format(*input))
 
-#@timer_wrap
+@timer_wrap
 def count_stones(state: np.array) -> List[int]:
     white = (state == 1).sum().item()
     black = (state == -1).sum().item()
     return [white, black]
 
-#@timer_wrap
+@timer_wrap
 def input_next_add(state: np.array, colour: int, moven : int, eval : float) -> tuple[int]:
     invalid_flag = False
     toptext = "Move %i with eval %.2f" %(moven, eval)
@@ -168,7 +168,7 @@ def input_next_add(state: np.array, colour: int, moven : int, eval : float) -> t
     state[move] = colour
     return move
 
-#@timer_wrap
+@timer_wrap
 def input_next_remove(state: np.array, colour: int, moven : int, eval : float) -> None:
     invalid_nostone = False
     invalid_ownstone = False
@@ -198,7 +198,7 @@ def input_next_remove(state: np.array, colour: int, moven : int, eval : float) -
                 invalid_ownstone = False
     state[move] = 0
 
-#@timer_wrap
+@timer_wrap
 def input_next_move(state: np.array, colour: int, is_late_game : bool, moven : int, eval : float) -> tuple[int]:
     toptext = "Move %i with eval %.2f" %(moven, eval)
     base = "Please move a stone."
@@ -231,7 +231,7 @@ def input_next_move(state: np.array, colour: int, is_late_game : bool, moven : i
     state[coords_to] = colour
     return coords_to
 
-#@timer_wrap
+@timer_wrap
 def initialize_neighbour_map() -> List:
     neighbour_indices = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
 
@@ -271,7 +271,7 @@ def initialize_neighbour_map() -> List:
 
 neighbors_map = initialize_neighbour_map()
 
-#@timer_wrap
+@timer_wrap
 def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI, 
                             little_cross : float = THREE_NEIGH_POSITIONS_MULTI, 
                             corner : float = CORNER_POSITION_MULTI) -> np.array:
@@ -290,7 +290,7 @@ def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI,
 
 board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, little_cross=THREE_NEIGH_POSITIONS_MULTI)
 
-#@timer_wrap
+@timer_wrap
 def get_neighbor_free(state : np.array, neigh_map : List = neighbors_map) -> List:
     """ Returns list of free neighboring cells for each cell"""
     free_neighs = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -304,7 +304,7 @@ def get_neighbor_free(state : np.array, neigh_map : List = neighbors_map) -> Lis
 
     return free_neighs
 
-#@timer_wrap
+@timer_wrap
 def check_mill(state: np.array, move: tuple[int]) -> bool:
     colour = state[move]
         
@@ -320,7 +320,7 @@ def check_mill(state: np.array, move: tuple[int]) -> bool:
     return False
     
 
-#@timer_wrap
+@timer_wrap
 def legal_moves_early(state : np.array) -> List:
     moves = []
     indices = np.where(state == 0)
@@ -330,7 +330,7 @@ def legal_moves_early(state : np.array) -> List:
             moves.append(tuple(index))
     return moves
 
-#@timer_wrap
+@timer_wrap
 def legal_moves_mid(state : np.array, colour : int, free_spaces : Any = None) -> List:
     moves = []
 
@@ -346,7 +346,7 @@ def legal_moves_mid(state : np.array, colour : int, free_spaces : Any = None) ->
                 moves.append([tuple((i, j, k)), tuple(free)])
     return moves
 
-#@timer_wrap
+@timer_wrap
 def legal_moves_end(state : np.array, colour : int, free_spaces : Any = None) -> List:
     moves = []
     indices = np.where(state == colour)
@@ -358,7 +358,7 @@ def legal_moves_end(state : np.array, colour : int, free_spaces : Any = None) ->
                 moves.append([tuple(index), tuple(emp)])
     return moves
 
-#@timer_wrap
+@timer_wrap
 def removeable_pieces(state : np.array, colour : int) -> List:
     indices = np.where(state == -colour)
     pieces = list(zip(*indices))
@@ -373,7 +373,7 @@ def removeable_pieces(state : np.array, colour : int) -> List:
     else:
         return list(zip(*indices))
 
-#@timer_wrap
+@timer_wrap
 def new_board_state_early(state : np.array, move : tuple[int], colour : int) -> List:
     new_states = []
     original_state = np.copy(state)
@@ -387,7 +387,7 @@ def new_board_state_early(state : np.array, move : tuple[int], colour : int) -> 
         new_states.append(original_state)
     return new_states
 
-#@timer_wrap
+@timer_wrap
 def new_board_state_mid(state : np.array, move : List[tuple[int]], colour : int) -> List:
     new_states = []
     original_state = np.copy(state)
@@ -404,28 +404,30 @@ def new_board_state_mid(state : np.array, move : List[tuple[int]], colour : int)
         new_states.append(original_state)
     return new_states
         
-#@timer_wrap
+@timer_wrap
 def evaluate_position(state : np.array, 
                         board_value : np.array = board_value, 
                         is_early_game : bool = False, 
                         legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
 
-    if is_early_game:
+    num_white_stones, num_black_stones = count_stones(state)
+    free_spaces = get_neighbor_free(state)
+
+    if is_early_game or num_white_stones == 3 or num_black_stones == 3:
         legal_moves_white = 0
         legal_moves_black = 0
     else:
         legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
         legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
-    free_spaces = get_neighbor_free(state)
-    terminal = is_terminal_node(state, is_early_game, free_spaces, legal_moves_white, legal_moves_black)
+    terminal = is_terminal_node(state, is_early_game, free_spaces, legal_moves_white, legal_moves_black, num_white_stones, num_black_stones)
     if abs(terminal) == 1:
         return terminal * 9001
 
     piece_value = state * board_value
     return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black)
 
-#@timer_wrap
+@timer_wrap
 def get_children_early(state : np.array, colour : int):
     children = []
     moves = legal_moves_early(state)
@@ -433,7 +435,7 @@ def get_children_early(state : np.array, colour : int):
         children += new_board_state_early(state, move, colour)
     return children
 
-#@timer_wrap
+@timer_wrap
 def get_children_mid(state : np.array, colour : int, is_late_game : bool = False):
     children = []
     if is_late_game:
@@ -444,14 +446,18 @@ def get_children_mid(state : np.array, colour : int, is_late_game : bool = False
         children += new_board_state_mid(state, move, colour)
     return children
 
-#@timer_wrap
+@timer_wrap
 def is_terminal_node(state : np.array, 
                         is_early_game : bool = False,
                         free_spaces : int  = None,
                         legal_moves_white : int = None,
-                        legal_moves_black : int = None) -> int:
+                        legal_moves_black : int = None,
+                        num_white_stones : int = None,
+                        num_black_stones : int = None) -> int:
+    
+    if num_white_stones is None or num_black_stones is None:
+        num_white_stones, num_black_stones = count_stones(state)
 
-    num_white_stones, num_black_stones = count_stones(state)
     if free_spaces is None:
         free_spaces = get_neighbor_free(state)
 
@@ -476,7 +482,7 @@ def is_terminal_node(state : np.array,
     
     return 0 # Still undecided
 
-#@timer_wrap
+@timer_wrap
 def minimax_early(node: np.array, 
                   depth: int, 
                   alpha: float, 
@@ -513,7 +519,7 @@ def minimax_early(node: np.array,
                 break  # Alpha cut-off
         return minEval, best_node, call_count
     
-#@timer_wrap
+@timer_wrap
 def parallel_minimax_early(node: np.array, 
                             depth: int, 
                             alpha: float, 
@@ -557,7 +563,7 @@ def parallel_minimax_early(node: np.array,
 
     return best_result, best_node, calls
     
-#@timer_wrap
+@timer_wrap
 def minimax_mid(node: np.array, 
                 depth: int, 
                 alpha: float, 
@@ -597,7 +603,7 @@ def minimax_mid(node: np.array,
         return minEval, best_node, call_count
     
 
-#@timer_wrap
+@timer_wrap
 def calc_depth_for_eval_calls(state : np.array, 
                               move_counter : int, 
                               late_game_white : bool, 
@@ -620,7 +626,7 @@ def calc_depth_for_eval_calls(state : np.array,
         depth_count += 1
     return depths[-2], int(np.floor(approx_calls_all[-2]))
 
-#@timer_wrap
+@timer_wrap
 def check_possible_mills(state: np.array, colour: int) -> List:
     possible_mills = set()
     indices = np.where(state == colour)
@@ -646,7 +652,7 @@ def check_possible_mills(state: np.array, colour: int) -> List:
     
     return list(possible_mills)
 
-#@timer_wrap
+@timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
     if len(check_possible_mills(state, colour)) > 0:
         return None

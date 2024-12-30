@@ -16,7 +16,7 @@ def red(string : str) -> None:
 
 FOLDER = "CPU/Games/"
 
-PLAYER_COLOUR = -1
+PLAYER_COLOUR = 1
 MAX_APPROX_EVAL_CALLS_EARLY = 5e4        # How many eval calls are approximately allowed early
 MAX_APPROX_EVAL_CALLS_MID = 2e5        # How many eval calls are approximately allowed mid to late
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
