@@ -42,9 +42,9 @@ endgame_white = False
 endgame_black = False
 
 if False:
-    board_state_history = torch.load("Sample_Midgame.pt")
-    board_state = torch.clone(board_state_history[-1][1])
-    move_number = 18
+    board_state_history = torch.load("Sample_Mid.pt")
+    board_state = torch.clone(board_state_history[-1][-1])
+    move_number = board_state_history[-1][0]
 
 
 if False:
@@ -148,9 +148,9 @@ try:
                 print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
 
                 current_eval = eval
+                move_number += 1
                 board_state_history.append([move_number, eval, torch.clone(board_state)])
                 player_turn = True
-                move_number += 1
             # Check for win
             check_win = mills.is_terminal_node(board_state, is_early_game = True)
             if check_win == PLAYER_COLOUR:
@@ -194,9 +194,9 @@ try:
                     if mills.check_mill(board_state, move):
                         #mills.show_position(board_state)
                         mills.input_next_remove(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
+                    move_number += 1
                     board_state_history.append([move_number, np.nan, torch.clone(board_state)])
                     player_turn = False
-                    move_number += 1
             else: # Computer Move
                 depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
                 display = "Computer thinking with depth %i (~%s calls)" %(depth, f"{approx_calls:,}")
@@ -222,9 +222,9 @@ try:
 
                 print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
                 current_eval = eval
+                move_number += 1
                 board_state_history.append([move_number, eval, torch.clone(board_state)])
                 player_turn = True
-                move_number += 1
 
             # Check for win
             check_win = mills.is_terminal_node(board_state)
