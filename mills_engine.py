@@ -148,82 +148,78 @@ def count_stones(state: torch.tensor) -> List[int]:
     return [white, black]
 
 @timer_wrap
-def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
+def input_next_add(state: torch.tensor, colour: int, moven : int, eval : float) -> tuple[int]:
     invalid_flag = False
+    toptext = "Move %i with eval %.2f" %(moven, eval)
     while True:
         if not invalid_flag:
-            move = gui.input(1, "Where should a stone be added?", state)[0]
+            move = gui.input(1, texttop=toptext, textbottom="Where should a stone be added?", state=state)[0]
         else:
-            move = gui.input(1, "There is already a stone there!\nWhere should a stone be added?", state)[0]
+            move = gui.input(1, texttop=toptext, textbottom="There is already a stone there!\nWhere should a stone be added?", state=state)[0]
 
-        if move == "z" or move == "zzz":
-            return move
+        if state[move] == 0:
+            break
         else:
-            if state[move] == 0:
-                break
-            else:
-                invalid_flag = True
+            invalid_flag = True
 
     state[move] = colour
     return move
 
 @timer_wrap
-def input_next_remove(state: torch.tensor, colour: int) -> None:
+def input_next_remove(state: torch.tensor, colour: int, moven : int, eval : float) -> None:
     invalid_nostone = False
     invalid_ownstone = False
+    cannot_back = False
+    toptext = "Move %i with eval %.2f" %(moven, eval)
     while True:
-        if not invalid_nostone and not invalid_ownstone:
-            move = gui.input(1, "Please remove an opposing stone.", state)[0]
+        if not invalid_nostone and not invalid_ownstone and not cannot_back:
+            move = gui.input(1, texttop=toptext, textbottom="Please remove an opposing stone.", state=state)[0]
+        elif cannot_back:
+            move = gui.input(1, texttop=toptext, textbottom="Cannot go back at this stage!\nPlease make a move and go back after.", state=state)[0]
+            cannot_back = False
         elif invalid_nostone and not invalid_ownstone:
-            move = gui.input(1, "There is no stone there!\nPlease remove an opposing stone.", state)[0]
+            move = gui.input(1, texttop=toptext, textbottom="There is no stone there!\nPlease remove an opposing stone.", state=state)[0]
         elif not invalid_nostone and invalid_ownstone:
-            move = gui.input(1, "That's your own stone!\nPlease remove an opposing stone.", state)[0]
+            move = gui.input(1, texttop=toptext, textbottom="That's your own stone!\nPlease remove an opposing stone.", state=state)[0]
 
-        if state[move] == -colour:
-            break
-        elif state[move] == colour:
-            invalid_nostone = False
-            invalid_ownstone = True
+        if move == "z" or move == "zzz":
+            cannot_back = True
         else:
-            invalid_nostone = True
-            invalid_ownstone = False
+            if state[move] == -colour:
+                break
+            elif state[move] == colour:
+                invalid_nostone = False
+                invalid_ownstone = True
+            else:
+                invalid_nostone = True
+                invalid_ownstone = False
     state[move] = 0
 
 @timer_wrap
-def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> tuple[int]:
+def input_next_move(state: torch.tensor, colour: int, is_late_game : bool, moven : int, eval : float) -> tuple[int]:
+    toptext = "Move %i with eval %.2f" %(moven, eval)
+    base = "Please move a stone."
+    bottomtext = base
     while True:
-        move = input("Please provide the next move in the format (ring_from x_from y_from ring_to x_to y_to): ")
+        move = gui.input(2, texttop = toptext, textbottom = bottomtext, state = state)
         if move == "z" or move == "zzz":
             return move
-        if re.match(r'^\d \d \d \d \d \d$', move):
-            ring_from, x_from, y_from, ring_to, x_to, y_to = map(int, move.split())
-            all_coords = tuple(map(int, move.split()))
-            coords_from = tuple((ring_from, x_from, y_from))
-            coords_to = tuple((ring_to, x_to, y_to ))
-            if all(n in {0, 1, 2} for n in all_coords):
-                if not (coords_from[1] == 1 and coords_from[2] == 1):
-                    if not (coords_to[1] == 1 and coords_to[2] == 1):
-                        if state[coords_from] == colour:
-                            if state[coords_to] == 0:
-                                if is_late_game:
-                                    break
-                                else:
-                                    if list(coords_to) in get_neighbor_free(state)[ring_from][x_from][y_from]:
-                                        break
-                                    else:
-                                        print("Invalid values. Cannot reach target from origin!")
-                            else:
-                                print("Invalid values. Target is not empty!")
-                        else:
-                            print("Invalid values. None of your stones is at origin!")
-                    else:
-                        print("Invalid values. x and y cannot both be 1")
+        
+        coords_from = move[0]
+        coords_to = move[1]
+        if state[coords_from] == colour:
+            if state[coords_to] == 0:
+                if is_late_game:
+                    break
                 else:
-                    print("Invalid values. x and y cannot both be 1")
+                    if list(coords_to) in get_neighbor_free(state)[coords_from[0]][coords_from[1]][coords_from[2]]:
+                        break
+                    else:
+                        bottomtext = "Cannot reach target from origin!\n" + base
             else:
-                print("Invalid values. All have to be 0, 1 or 2")
+                bottomtext = "Target at second click is not empty!\n" + base
         else:
-            print("Invalid format.")
+            bottomtext = "None of your stones is at the first click!\n" + base
 
     state[coords_from] = 0
     state[coords_to] = colour

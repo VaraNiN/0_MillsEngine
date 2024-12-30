@@ -63,7 +63,7 @@ def create_mills_board(canvas : tk.Canvas, state : torch.tensor = torch.zeros((3
         else:
             canvas.create_oval(vx-radius, vy-radius, vx+radius, vy+radius, fill="black")
 
-def input(len : int = 1, text : str = "", state : torch.tensor = torch.zeros((3, 3, 3))):
+def input(len : int = 1, texttop : str = "", textbottom : str = "", state : torch.tensor = torch.zeros((3, 3, 3))):
     root = tk.Tk()
     root.title("Mills Board Click Tracker")
 
@@ -72,8 +72,12 @@ def input(len : int = 1, text : str = "", state : torch.tensor = torch.zeros((3,
     canvas = tk.Canvas(root, width=width, height=height)
     canvas.pack()
 
-    if text:
-        canvas.create_text(300, 666, text=text, font=("Arial", 16))
+    if textbottom:
+        canvas.create_text(300, 666, text=textbottom, font=("Arial", 16))
+
+    if texttop:
+        canvas.create_text(300, 30, text=texttop, font=("Arial", 16))
+        
 
     create_mills_board(canvas, state)
 
@@ -95,7 +99,7 @@ def input(len : int = 1, text : str = "", state : torch.tensor = torch.zeros((3,
 
     return result if result else None
 
-def show_board(text : str = "", state : torch.tensor = torch.zeros((3, 3, 3))):
+def show_board(texttop : str = "", textbottom : str = "",  state : torch.tensor = torch.zeros((3, 3, 3))):
     root = tk.Tk()
     root.title("Mills Board Click Tracker")
 
@@ -104,8 +108,11 @@ def show_board(text : str = "", state : torch.tensor = torch.zeros((3, 3, 3))):
     canvas = tk.Canvas(root, width=width, height=height)
     canvas.pack()
 
-    if text:
-        canvas.create_text(300, 666, text=text, font=("Arial", 16))
+    if textbottom:
+        canvas.create_text(300, 666, text=textbottom, font=("Arial", 16))
+
+    if texttop:
+        canvas.create_text(300, 30, text=texttop, font=("Arial", 16))
 
     create_mills_board(canvas, state)
     

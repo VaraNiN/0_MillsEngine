@@ -39,7 +39,7 @@ finished_flag = False
 endgame_white = False
 endgame_black = False
 
-if False:
+if True:
     board_state[0, 2, 0] = 1
     board_state[1, 1, 0] = 1
     board_state[1, 2, 0] = 1
@@ -84,9 +84,12 @@ def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, dep
     q.put(minimax_result)
     event.set()
 
-def run_minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event):
-    mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+
+def run_minimax_mid(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black):
+    minimax_result = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+    q.put(minimax_result)
     event.set()
+
 
 # Function to check if the minimax computation is complete
 def check_minimax_result(root : tk.Tk, event : threading.Event):
@@ -97,8 +100,8 @@ def check_minimax_result(root : tk.Tk, event : threading.Event):
 
 try:
     while not finished_flag:
-        mills.show_position(board_state)
-        print("Move %i with eval %.2f:" %(move_number + 1, current_eval))
+        #mills.show_position(board_state)
+        print("\nMove %i with eval %.2f:" %(move_number + 1, current_eval))
 
         # Early Game
         if move_number < 18:
@@ -107,7 +110,8 @@ try:
                     print("Please place white stone %i / 9" %(move_number // 2 + 1))
                 else:
                     print("Please place black stone %i / 9" %(move_number // 2 + 1))
-                move = mills.input_next_add(board_state, PLAYER_COLOUR)
+                move = mills.input_next_add(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
+                #current_eval = mills.evaluate_position(board_state, is_early_game=True)
                 if move == "z":
                     if move_number >= 2:
                         move_number -= 2
@@ -130,8 +134,9 @@ try:
                         red("Cannot go further back.")
                 else:
                     if mills.check_mill(board_state, move):
-                        mills.show_position(board_state)
-                        mills.input_next_remove(board_state, PLAYER_COLOUR)
+                        #mills.show_position(board_state)
+                        mills.input_next_remove(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
+                        #current_eval = mills.evaluate_position(board_state, is_early_game=True)
                     board_state_history.append([np.nan, torch.clone(board_state)])
                     player_turn = False
                     move_number += 1
@@ -151,13 +156,11 @@ try:
                     q = queue.Queue()
                     minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX))
                     minimax_thread.start()
-                    root = gui.show_board(display, board_state)
+                    root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                     root.after(100, check_minimax_result, root, event)
                     root.mainloop()
-                    #eval, board_state, calls = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
                     minimax_thread.join()
                     eval, board_state, calls = q.get()
-                    #root.mainloop()
                 
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
@@ -195,7 +198,7 @@ try:
 
             if player_turn: # Player Move
                 if PLAYER_COLOUR == 1:
-                    move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_white)
+                    move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_white, move_number + 1, current_eval)
                 else:
                     move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_black)
                 if move == "z":
