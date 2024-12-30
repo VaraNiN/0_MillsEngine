@@ -253,5 +253,9 @@ try:
 except KeyboardInterrupt:
     print("\n")
     pass
+except tk.TclError:
+    print("\n")
+    pass
+
 
 mills.print_report()
