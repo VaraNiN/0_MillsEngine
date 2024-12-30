@@ -43,10 +43,11 @@ endgame_black = False
 
 if True:
     prev_array = board_state
-    for i in range(int(1e4)):
+    for i in range(int(1e5)):
         random_array = np.random.choice([-1, 0, 1], size=(3, 3, 3))
-        a, b = mills.check_possible_mills_new(random_array)
-        if False:   
+        a, b = mills.check_possible_mills_list(random_array)
+        c, d = mills.check_possible_mills_array(random_array)
+        if True:   
             if a != c:
                 print(i, "w", a, c)
                 print(mills.check_possible_mills(random_array, 1))

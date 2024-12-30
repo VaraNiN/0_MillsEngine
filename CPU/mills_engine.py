@@ -652,7 +652,7 @@ def check_possible_mills(state: np.array, colour: int) -> List:
 
 @timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
-    white, black = check_possible_mills_new(state)
+    white, black = initialize_mill_array(state)
     #white, black = len(check_possible_mills(state, 1)), len(check_possible_mills(state, -1))
     if white > 0:
         return None
@@ -677,18 +677,38 @@ def initialize_mill_list() -> List:
     for i, j in [[0, 1], [1, 0], [1, 2], [2, 1]]:
         mills.append([(0, i, j), (1, i, j), (2, i, j)])
     return mills
-    #return np.array(mills)
 
 mills_list = initialize_mill_list()
 
 @timer_wrap
-def check_possible_mills_new(state: np.array) -> List:
-    #results = np.sum(state[tuple(mills_list.T)], axis=0)
-    #print(results)
+def check_possible_mills_list(state: np.array) -> List:
     results = np.zeros(len(mills_list))
     for i, mill in enumerate(mills_list):
         for index in mill:
             results[i] += state[index]
+
+    possible_white_mills = np.count_nonzero(results == 2)
+    possible_black_mills = np.count_nonzero(results == -2)
+    
+    return possible_white_mills, possible_black_mills
+
+@timer_wrap
+def initialize_mill_array() -> List:
+    mills = []
+    for i in range(3):
+        for j in [0, 2]:
+            mills.append([(i, 0, j) , (i, 1, j), (i, 2, j)])
+            mills.append([(i, j, 0) , (i, j, 1), (i, j, 2)])
+    
+    for i, j in [[0, 1], [1, 0], [1, 2], [2, 1]]:
+        mills.append([(0, i, j), (1, i, j), (2, i, j)])
+    return np.array(mills)
+
+mills_array = initialize_mill_array()
+
+@timer_wrap
+def check_possible_mills_array(state: np.array) -> List:
+    results = np.sum(state[tuple(mills_array.T)], axis=0)
 
     possible_white_mills = np.count_nonzero(results == 2)
     possible_black_mills = np.count_nonzero(results == -2)
