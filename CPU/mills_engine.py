@@ -624,36 +624,36 @@ def calc_depth_for_eval_calls(state : np.array,
         depth_count += 1
     return depths[-2], int(np.floor(approx_calls_all[-2]))
 
-@timer_wrap
+""" @timer_wrap
 def check_possible_mills(state: np.array, colour: int) -> List:
     possible_mills = set()
     indices = np.where(state == colour)
     positions = list(zip(*indices))
     
     for i, j, k in positions:
+
         if j == 1 or k == 1:
-            if state[i - 1, j, k] == colour:
-                if state[i - 2, j, k] == 0:
-                    possible_mills.add(((i - 2) % 3, j, k))
-                elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
-                    possible_mills.add(((i - 1) % 3, j, k))
-        if state[i, j - 1, k] == colour:
-            if state[i, j - 2, k] == 0:
-                possible_mills.add((i, (j - 2) % 3, k))
-            elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
-                possible_mills.add((i, (j - 1) % 3, k))
-        if state[i, j, k - 1] == colour:
-            if state[i, j, k - 2] == 0:
-                possible_mills.add((i, j, (k - 2) % 3))
-            elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
-                possible_mills.add((i, j, (k - 1) % 3))
+            if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
+                possible_mills.add(((i - 2) % 3, j, k))
+            elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
+                possible_mills.add(((i - 1) % 3, j, k))
+
+        if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
+            possible_mills.add((i, (j - 2) % 3, k))
+        elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
+            possible_mills.add((i, (j - 1) % 3, k))
+
+        if state[i, j, k - 1] == colour and state[i, j, k - 2] == 0:
+            possible_mills.add((i, j, (k - 2) % 3))
+        elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
+            possible_mills.add((i, j, (k - 1) % 3))
     
-    return list(possible_mills)
+    return list(possible_mills) """
 
 @timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
     white, black = check_possible_mills_new(state)
-    white, black = len(check_possible_mills(state, 1)), len(check_possible_mills(state, -1))
+    #white, black = len(check_possible_mills(state, 1)), len(check_possible_mills(state, -1))
     if white > 0:
         return None
     elif black > 0:
@@ -671,17 +671,20 @@ def initialize_mill_list() -> List:
     mills = []
     for i in range(3):
         for j in [0, 2]:
-            mills.append([(i, 0, j) , (i, 1, 0), (i, 2, 0)])
+            mills.append([(i, 0, j) , (i, 1, j), (i, 2, j)])
             mills.append([(i, j, 0) , (i, j, 1), (i, j, 2)])
     
     for i, j in [[0, 1], [1, 0], [1, 2], [2, 1]]:
         mills.append([(0, i, j), (1, i, j), (2, i, j)])
     return mills
+    #return np.array(mills)
 
 mills_list = initialize_mill_list()
 
 @timer_wrap
 def check_possible_mills_new(state: np.array) -> List:
+    #results = np.sum(state[tuple(mills_list.T)], axis=0)
+    #print(results)
     results = np.zeros(len(mills_list))
     for i, mill in enumerate(mills_list):
         for index in mill:

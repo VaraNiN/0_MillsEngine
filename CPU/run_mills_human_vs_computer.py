@@ -40,18 +40,35 @@ finished_flag = False
 endgame_white = False
 endgame_black = False
 
+
+if True:
+    prev_array = board_state
+    for i in range(int(1e4)):
+        random_array = np.random.choice([-1, 0, 1], size=(3, 3, 3))
+        a, b = mills.check_possible_mills_new(random_array)
+        if False:   
+            if a != c:
+                print(i, "w", a, c)
+                print(mills.check_possible_mills(random_array, 1))
+                mills.show_position(random_array, check_validity=False)
+            if b != d:
+                print(i, "b", b, d)
+                print(mills.check_possible_mills(random_array, -1))
+                mills.show_position(random_array, check_validity=False)
+
+            if np.array_equal(prev_array, random_array):
+                print(random_array)
+            else:
+                prev_array = random_array
+    mills.print_report()
+    exit()
+
+
 if True:
     board_state_history = np.load("CPU/Sample_Mid.npy")
     board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
     board_state = np.copy(board_state_history[-1])
     move_number = len(board_state_history) - 1
-    mills.show_position(board_state)
-    print(len(mills.check_possible_mills(board_state, 1)))
-    print(len(mills.check_possible_mills(board_state, -1)))
-    print(mills.check_possible_mills_new(board_state))
-    mills.print_report()
-    mills.show_position(board_state)
-    exit()
 
 
 if False:
