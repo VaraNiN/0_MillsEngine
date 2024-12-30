@@ -82,28 +82,28 @@ def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
 @timer_wrap
-def check_position(state: torch.tensor) -> bool:
-    if state.size() != (3, 3, 3):
+def check_position(state: np.array) -> bool:
+    if state.shape != (3, 3, 3):
         red("Warning: Invalid Board State - Incorrect size")
         print(state)
         return False
     
-    if not torch.isin(state, torch.tensor([1, 0, -1])).all():
+    if not np.isin(state, np.array([1, 0, -1])).all():
         red("Warning: Invalid Board State - Contains invalid values")
         print(state)
         return False
     
-    if not torch.isin(state[:, 1, 1], torch.tensor([0])).all():
+    if not np.isin(state[:, 1, 1], np.array([0])).all():
         red("Warning: Invalid Board State - Center positions must be 0")
         print(state)
         return False
     
-    if torch.sum(state == 1) > 9:
+    if np.sum(state == 1) > 9:
         red("Warning: Invalid Board State - Too many white stones")
         print(state)
         return False
     
-    if abs(torch.sum(state == -1)) > 9:
+    if abs(np.sum(state == -1)) > 9:
         red("Warning: Invalid Board State - Too many black stones")
         print(state)
         return False
@@ -111,7 +111,7 @@ def check_position(state: torch.tensor) -> bool:
     return True
 
 @timer_wrap
-def show_position(state : torch.tensor, check_validity : bool = True, replace_symbols : bool = True) -> None:
+def show_position(state : np.array, check_validity : bool = True, replace_symbols : bool = True) -> None:
     if check_validity:
         if not check_position(state):
             return
@@ -141,13 +141,13 @@ def show_position(state : torch.tensor, check_validity : bool = True, replace_sy
     print(board_template.format(*input))
 
 @timer_wrap
-def count_stones(state: torch.tensor) -> List[int]:
+def count_stones(state: np.array) -> List[int]:
     white = (state == 1).sum().item()
     black = (state == -1).sum().item()
     return [white, black]
 
 @timer_wrap
-def input_next_add(state: torch.tensor, colour: int, moven : int, eval : float) -> tuple[int]:
+def input_next_add(state: np.array, colour: int, moven : int, eval : float) -> tuple[int]:
     invalid_flag = False
     toptext = "Move %i with eval %.2f" %(moven, eval)
     while True:
@@ -168,7 +168,7 @@ def input_next_add(state: torch.tensor, colour: int, moven : int, eval : float) 
     return move
 
 @timer_wrap
-def input_next_remove(state: torch.tensor, colour: int, moven : int, eval : float) -> None:
+def input_next_remove(state: np.array, colour: int, moven : int, eval : float) -> None:
     invalid_nostone = False
     invalid_ownstone = False
     cannot_back = False
@@ -198,7 +198,7 @@ def input_next_remove(state: torch.tensor, colour: int, moven : int, eval : floa
     state[move] = 0
 
 @timer_wrap
-def input_next_move(state: torch.tensor, colour: int, is_late_game : bool, moven : int, eval : float) -> tuple[int]:
+def input_next_move(state: np.array, colour: int, is_late_game : bool, moven : int, eval : float) -> tuple[int]:
     toptext = "Move %i with eval %.2f" %(moven, eval)
     base = "Please move a stone."
     bottomtext = base
@@ -210,12 +210,14 @@ def input_next_move(state: torch.tensor, colour: int, is_late_game : bool, moven
         
         coords_from = move[0]
         coords_to = move[1]
+        print(coords_from, coords_to)
         if state[coords_from] == colour:
             if state[coords_to] == 0:
                 if is_late_game:
                     break
                 else:
-                    if list(coords_to) in get_neighbor_free(state)[coords_from[0]][coords_from[1]][coords_from[2]]:
+                    print(get_neighbor_free(state)[coords_from[0]][coords_from[1]][coords_from[2]])
+                    if coords_to in get_neighbor_free(state)[coords_from[0]][coords_from[1]][coords_from[2]]:
                         break
                     else:
                         bottomtext = "Cannot reach target from origin!\n" + base
@@ -271,8 +273,8 @@ neighbors_map = initialize_neighbour_map()
 @timer_wrap
 def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI, 
                             little_cross : float = THREE_NEIGH_POSITIONS_MULTI, 
-                            corner : float = CORNER_POSITION_MULTI) -> torch.tensor:
-    board_value = torch.tensor([
+                            corner : float = CORNER_POSITION_MULTI) -> np.array:
+    board_value = np.array([
         [[corner, little_cross, corner], 
          [little_cross, 0.0, little_cross], 
          [corner, little_cross, corner]],
@@ -288,10 +290,11 @@ def initialize_boardvalues(big_cross : float = FOUR_NEIGH_POSITIONS_MULTI,
 board_value = initialize_boardvalues(big_cross=FOUR_NEIGH_POSITIONS_MULTI, little_cross=THREE_NEIGH_POSITIONS_MULTI)
 
 @timer_wrap
-def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) -> List:
+def get_neighbor_free(state : np.array, neigh_map : List = neighbors_map) -> List:
     """ Returns list of free neighboring cells for each cell"""
     free_neighs = [[[[] for _ in range(3)] for _ in range(3)] for _ in range(3)]
-    positions = torch.nonzero(state == 0).tolist()
+    indices = np.where(state == 0)
+    positions = list(zip(*indices))
     for index in positions:
         i, j, k = index
         for neigh in neigh_map[i][j][k]:
@@ -301,7 +304,7 @@ def get_neighbor_free(state : torch.tensor, neigh_map : List = neighbors_map) ->
     return free_neighs
 
 @timer_wrap
-def check_mill(state: torch.tensor, move: tuple[int]) -> bool:
+def check_mill(state: np.array, move: tuple[int]) -> bool:
     colour = state[move]
         
     ring, x, y = move
@@ -317,22 +320,24 @@ def check_mill(state: torch.tensor, move: tuple[int]) -> bool:
     
 
 @timer_wrap
-def legal_moves_early(state : torch.tensor) -> List:
+def legal_moves_early(state : np.array) -> List:
     moves = []
-    pieces = torch.nonzero(state == 0).tolist()
+    indices = np.where(state == 0)
+    pieces = list(zip(*indices))
     for index in pieces:
         if not (index[1] == 1 and index[2] == 1):
             moves.append(tuple(index))
     return moves
 
 @timer_wrap
-def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
+def legal_moves_mid(state : np.array, colour : int, free_spaces : Any = None) -> List:
     moves = []
 
     if free_spaces is None:
         free_spaces = get_neighbor_free(state)
 
-    pieces = torch.nonzero(state == colour).tolist()
+    indices = np.where(state == colour)
+    pieces = list(zip(*indices))
     for index in pieces:
         i, j, k = index
         if not (j == 1 and k == 1):
@@ -341,9 +346,10 @@ def legal_moves_mid(state : torch.tensor, colour : int, free_spaces : Any = None
     return moves
 
 @timer_wrap
-def legal_moves_end(state : torch.tensor, colour : int, free_spaces : Any = None) -> List:
+def legal_moves_end(state : np.array, colour : int, free_spaces : Any = None) -> List:
     moves = []
-    pieces = torch.nonzero(state == colour).tolist()
+    indices = np.where(state == colour)
+    pieces = list(zip(*indices))
     empty = legal_moves_early(state)
     for index in pieces:
         if not (index[1] == 1 and index[2] == 1):
@@ -352,8 +358,9 @@ def legal_moves_end(state : torch.tensor, colour : int, free_spaces : Any = None
     return moves
 
 @timer_wrap
-def removeable_pieces(state : torch.tensor, colour : int) -> List:
-    pieces = torch.nonzero(state == -colour).tolist()
+def removeable_pieces(state : np.array, colour : int) -> List:
+    indices = np.where(state == -colour)
+    pieces = list(zip(*indices))
     i = 0
     while i < len(pieces):
         if check_mill(state, tuple(pieces[i])):
@@ -363,16 +370,16 @@ def removeable_pieces(state : torch.tensor, colour : int) -> List:
     if len(pieces) > 0:
         return pieces
     else:
-        return torch.nonzero(state == -colour).tolist()
+        return list(zip(*indices))
 
 @timer_wrap
-def new_board_state_early(state : torch.tensor, move : tuple[int], colour : int) -> List:
+def new_board_state_early(state : np.array, move : tuple[int], colour : int) -> List:
     new_states = []
-    original_state = torch.clone(state)
+    original_state = np.copy(state)
     original_state[move] = colour
     if check_mill(original_state, move):
         for index in removeable_pieces(original_state, colour):
-            dummy_state = torch.clone(original_state)
+            dummy_state = np.copy(original_state)
             dummy_state[tuple(index)] = 0
             new_states.append(dummy_state)
     else:
@@ -380,16 +387,16 @@ def new_board_state_early(state : torch.tensor, move : tuple[int], colour : int)
     return new_states
 
 @timer_wrap
-def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : int) -> List:
+def new_board_state_mid(state : np.array, move : List[tuple[int]], colour : int) -> List:
     new_states = []
-    original_state = torch.clone(state)
+    original_state = np.copy(state)
     move_from = move[0]
     move_to = move[1]
     original_state[move_from] = 0
     original_state[move_to] = colour
     if check_mill(original_state, move_to):
         for index in removeable_pieces(original_state, colour):
-            dummy_state = torch.clone(original_state)
+            dummy_state = np.copy(original_state)
             dummy_state[tuple(index)] = 0
             new_states.append(dummy_state)
     else:
@@ -397,8 +404,8 @@ def new_board_state_mid(state : torch.tensor, move : List[tuple[int]], colour : 
     return new_states
         
 @timer_wrap
-def evaluate_position(state : torch.tensor, 
-                        board_value : torch.tensor = board_value, 
+def evaluate_position(state : np.array, 
+                        board_value : np.array = board_value, 
                         is_early_game : bool = False, 
                         legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
 
@@ -414,7 +421,7 @@ def evaluate_position(state : torch.tensor,
     return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black)
 
 @timer_wrap
-def get_children_early(state : torch.tensor, colour : int):
+def get_children_early(state : np.array, colour : int):
     children = []
     moves = legal_moves_early(state)
     for i, move in enumerate(moves):
@@ -422,7 +429,7 @@ def get_children_early(state : torch.tensor, colour : int):
     return children
 
 @timer_wrap
-def get_children_mid(state : torch.tensor, colour : int, is_late_game : bool = False):
+def get_children_mid(state : np.array, colour : int, is_late_game : bool = False):
     children = []
     if is_late_game:
         moves = legal_moves_end(state, colour)
@@ -433,7 +440,7 @@ def get_children_mid(state : torch.tensor, colour : int, is_late_game : bool = F
     return children
 
 @timer_wrap
-def is_terminal_node(state : torch.tensor, 
+def is_terminal_node(state : np.array, 
                         is_early_game : bool = False,
                         free_spaces : Any  = None) -> int:
 
@@ -460,12 +467,12 @@ def is_terminal_node(state : torch.tensor,
     return 0 # Still undecided
 
 @timer_wrap
-def minimax_early(node: torch.tensor, 
+def minimax_early(node: np.array, 
                   depth: int, 
                   alpha: float, 
                   beta: float, 
                   maximizingPlayer: bool, 
-                  call_count: int = 0) -> tuple[float, torch.tensor, int]:
+                  call_count: int = 0) -> tuple[float, np.array, int]:
     call_count += 1  # Increment the counter each time the function is called
 
     if depth == 0 or abs(is_terminal_node(node, is_early_game=True)) == 1:
@@ -497,14 +504,14 @@ def minimax_early(node: torch.tensor,
         return minEval, best_node, call_count
     
 @timer_wrap
-def minimax_mid(node: torch.tensor, 
+def minimax_mid(node: np.array, 
                 depth: int, 
                 alpha: float, 
                 beta: float, 
                 maximizingPlayer: bool,
                 maximinzing_end: bool,
                 minimizing_end: bool,
-                call_count: int = 0) -> tuple[float, torch.tensor, int]:
+                call_count: int = 0) -> tuple[float, np.array, int]:
     call_count += 1  # Increment the counter each time the function is called
 
     if depth == 0 or abs(is_terminal_node(node)) == 1:
@@ -537,7 +544,7 @@ def minimax_mid(node: torch.tensor,
     
 
 @timer_wrap
-def calc_depth_for_eval_calls(state : torch.tensor, 
+def calc_depth_for_eval_calls(state : np.array, 
                               move_counter : int, 
                               late_game_white : bool, 
                               late_game_black : bool, 
@@ -560,9 +567,10 @@ def calc_depth_for_eval_calls(state : torch.tensor,
     return depths[-2], int(np.floor(approx_calls_all[-2]))
 
 @timer_wrap
-def check_possible_mills(state: torch.tensor, colour: int) -> List:
+def check_possible_mills(state: np.array, colour: int) -> List:
     possible_mills = set()
-    positions = torch.nonzero(state == colour).tolist()
+    indices = np.where(state == colour)
+    positions = list(zip(*indices))
     
     for i, j, k in positions:
         if j == 1 or k == 1:
@@ -585,7 +593,7 @@ def check_possible_mills(state: torch.tensor, colour: int) -> List:
     return list(possible_mills)
 
 @timer_wrap
-def book_moves(state: torch.tensor, colour : int) -> Any:
+def book_moves(state: np.array, colour : int) -> Any:
     if len(check_possible_mills(state, colour)) > 0:
         return None
     elif len(check_possible_mills(state, -colour)) > 0:

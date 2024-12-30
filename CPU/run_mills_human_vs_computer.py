@@ -14,14 +14,14 @@ from datetime import datetime
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
-FOLDER = "Games/"
+FOLDER = "CPU/Games/"
 
-PLAYER_COLOUR = -1
+PLAYER_COLOUR = 1
 MAX_APPROX_EVAL_CALLS = 5e4        # How many eval calls are approximately allowed
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
-board_state = torch.zeros((3,3,3), dtype=int)
-board_state_history = [torch.clone(board_state)]
+board_state = np.zeros((3,3,3), dtype=int)
+board_state_history = [np.copy(board_state)]
 
 BASE_ALPHA = float('-inf')
 BASE_BETA = float('inf')
@@ -33,22 +33,22 @@ else:
     player_turn = False
     COMPUTER_MAX = True
 
-
 current_eval = 0
 move_number = 0
 finished_flag = False
 endgame_white = False
 endgame_black = False
 
-if False:
-    board_state_history = torch.load("Sample_Mid.pt")
-    board_state = torch.clone(board_state_history[-1])
+if True:
+    board_state_history = np.load("CPU/Sample_Mid.npy")
+    board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
+    board_state = np.copy(board_state_history[-1])
     move_number = len(board_state_history) - 1
 
 
 if False:
-    board_state_history = torch.load("Sample_Late.pt")
-    board_state = torch.clone(board_state_history[-1])
+    board_state_history = np.load("Sample_Late.pt")
+    board_state = np.clone(board_state_history[-1])
     move_number = len(board_state_history) - 1
 
 
@@ -93,12 +93,12 @@ try:
                 #current_eval = mills.evaluate_position(board_state, is_early_game=True)
                 if move == "ABORT":
                     mills.print_report()
-                    torch.save(board_state_history, FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.pt"))
+                    np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
                     exit()
                 elif move == "z":
                     if move_number >= 2:
                         move_number -= 2
-                        board_state = torch.clone(board_state_history[move_number])
+                        board_state = np.copy(board_state_history[move_number])
                         board_state_history.pop(-1)
                         board_state_history.pop(-1)
                         print("Going back a full move.")
@@ -107,7 +107,7 @@ try:
                 elif move == "zzz":
                     if move_number >= 1:
                         move_number -= 1
-                        board_state = torch.clone(board_state_history[move_number])
+                        board_state = np.copy(board_state_history[move_number])
                         board_state_history.pop(-1)
                         print("Going back half a move.")
                         red("This switches sides!")
@@ -121,7 +121,7 @@ try:
                         mills.input_next_remove(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
                         #current_eval = mills.evaluate_position(board_state, is_early_game=True)
                     move_number += 1
-                    board_state_history.append(torch.clone(board_state))
+                    board_state_history.append(np.copy(board_state))
                     player_turn = False
             else: # Computer Move
                 depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
@@ -157,7 +157,7 @@ try:
 
                 current_eval = eval
                 move_number += 1
-                board_state_history.append(torch.clone(board_state))
+                board_state_history.append(np.copy(board_state))
                 player_turn = True
             # Check for win
             check_win = mills.is_terminal_node(board_state, is_early_game = True)
@@ -186,17 +186,17 @@ try:
                     move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_black, move_number + 1, current_eval)
                 if move == "ABORT":
                     mills.print_report()
-                    torch.save(board_state_history, FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.pt"))
+                    np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
                     exit()
                 elif move == "z":
                     move_number -= 2
-                    board_state = torch.clone(board_state_history[move_number])
+                    board_state = np.copy(board_state_history[move_number])
                     board_state_history.pop(-1)
                     board_state_history.pop(-1)
                     print("Going back a full move.")
                 elif move == "zzz":
                     move_number -= 1
-                    board_state = torch.clone(board_state_history[move_number])
+                    board_state = np.copy(board_state_history[move_number])
                     board_state_history.pop(-1)
                     print("Going back half a move.")
                     red("This switches sides!")
@@ -207,7 +207,7 @@ try:
                         #mills.show_position(board_state)
                         mills.input_next_remove(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
                     move_number += 1
-                    board_state_history.append(torch.clone(board_state))
+                    board_state_history.append(np.copy(board_state))
                     player_turn = False
             else: # Computer Move
                 depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
@@ -236,7 +236,7 @@ try:
                 print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
                 current_eval = eval
                 move_number += 1
-                board_state_history.append(torch.clone(board_state))
+                board_state_history.append(np.copy(board_state))
                 player_turn = True
 
             # Check for win
@@ -260,4 +260,4 @@ except tk.TclError:
 
 mills.print_report()
 
-torch.save(board_state_history, FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S.pt"))
+np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)

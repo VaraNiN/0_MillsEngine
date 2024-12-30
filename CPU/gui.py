@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-import mills_engine as mills
+import numpy as np
 
 def on_click(event : tk.Event, root : tk.Tk , result : list, inputs : int) -> list:
     x, y = event.x, event.y
@@ -27,7 +27,7 @@ def get_vicinity(x, y, offset : int = -50, radius : int = 20):
             return index
     return None
 
-def create_mills_board(canvas : tk.Canvas, state : torch.tensor = torch.zeros((3, 3, 3), dtype=int), width : int = 600, height : int = 600, offset : int = -50, radius : int = 20):
+def create_mills_board(canvas : tk.Canvas, state : np.array = np.zeros((3, 3, 3), dtype=int), width : int = 600, height : int = 600, offset : int = -50, radius : int = 20):
 
     # Outer square
     canvas.create_rectangle(40, 40 - offset, width-40, height-40 - offset)
@@ -62,7 +62,7 @@ def create_mills_board(canvas : tk.Canvas, state : torch.tensor = torch.zeros((3
         else:
             canvas.create_oval(vx-radius, vy-radius, vx+radius, vy+radius, fill="black")
 
-def input(len : int = 1, texttop : str = "", textbottom : str = "", state : torch.tensor = torch.zeros((3, 3, 3))):
+def input(len : int = 1, texttop : str = "", textbottom : str = "", state : np.array = np.zeros((3, 3, 3))):
     root = tk.Tk()
     root.title("Mills Board Click Tracker")
 
@@ -98,7 +98,7 @@ def input(len : int = 1, texttop : str = "", textbottom : str = "", state : torc
 
     return result if result else None
 
-def show_board(texttop : str = "", textbottom : str = "",  state : torch.tensor = torch.zeros((3, 3, 3))):
+def show_board(texttop : str = "", textbottom : str = "",  state : np.array = np.zeros((3, 3, 3))):
     root = tk.Tk()
     root.title("Mills Board Click Tracker")
 
