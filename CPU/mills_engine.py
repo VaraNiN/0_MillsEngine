@@ -631,22 +631,21 @@ def check_possible_mills(state: np.array, colour: int) -> List:
     positions = list(zip(*indices))
     
     for i, j, k in positions:
-        if j == 1 or k == 1:
-            if state[i - 1, j, k] == colour:
-                if state[i - 2, j, k] == 0:
-                    possible_mills.add(((i - 2) % 3, j, k))
-                elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
-                    possible_mills.add(((i - 1) % 3, j, k))
-            if state[i, j - 1, k] == colour:
-                if state[i, j - 2, k] == 0:
-                    possible_mills.add((i, (j - 2) % 3, k))
-                elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
-                    possible_mills.add((i, (j - 1) % 3, k))
-            if state[i, j, k - 1] == colour:
-                if state[i, j, k - 2] == 0:
-                    possible_mills.add((i, j, (k - 2) % 3))
-                elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
-                    possible_mills.add((i, j, (k - 1) % 3))
+        if state[i - 1, j, k] == colour:
+            if state[i - 2, j, k] == 0:
+                possible_mills.add(((i - 2) % 3, j, k))
+            elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
+                possible_mills.add(((i - 1) % 3, j, k))
+        if state[i, j - 1, k] == colour:
+            if state[i, j - 2, k] == 0:
+                possible_mills.add((i, (j - 2) % 3, k))
+            elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
+                possible_mills.add((i, (j - 1) % 3, k))
+        if state[i, j, k - 1] == colour:
+            if state[i, j, k - 2] == 0:
+                possible_mills.add((i, j, (k - 2) % 3))
+            elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
+                possible_mills.add((i, j, (k - 1) % 3))
     
     return list(possible_mills)
 

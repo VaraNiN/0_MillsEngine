@@ -40,11 +40,16 @@ finished_flag = False
 endgame_white = False
 endgame_black = False
 
-if False:
+if True:
     board_state_history = np.load("CPU/Sample_Mid.npy")
     board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
     board_state = np.copy(board_state_history[-1])
     move_number = len(board_state_history) - 1
+    print(len(mills.check_possible_mills(board_state, 1)))
+    print(len(mills.check_possible_mills(board_state, -1)))
+    print(mills.check_possible_mills_new(board_state))
+    mills.print_report()
+    exit()
 
 
 if False:
