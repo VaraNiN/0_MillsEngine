@@ -17,8 +17,7 @@ def red(string : str) -> None:
 FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
-MAX_THREADS = 24                   # Maximum CPU Threads
-MAX_APPROX_EVAL_CALLS = 2e4        # How many eval calls are approximately allowed
+MAX_APPROX_EVAL_CALLS = 2e5        # How many eval calls are approximately allowed
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = np.zeros((3,3,3), dtype=int)
@@ -61,9 +60,8 @@ if False:
 
 MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
 
-def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, threads):
-    #minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
-    minimax_result = mills.minimax_early_multi(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, max_workers=threads)
+def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX):
+    minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
     q.put(minimax_result)
     event.set()
 
@@ -137,10 +135,10 @@ try:
                 if mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
                     eval, board_state, calls = mills.book_moves(board_state, -PLAYER_COLOUR)
                 else:
-                    if False:
+                    if True:
                         event = threading.Event()
                         q = queue.Queue()
-                        minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, MAX_THREADS))
+                        minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX))
                         minimax_thread.start()
                         root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                         root.after(100, check_minimax_result, root, event)
