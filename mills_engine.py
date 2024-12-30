@@ -157,6 +157,9 @@ def input_next_add(state: torch.tensor, colour: int, moven : int, eval : float) 
         else:
             move = gui.input(1, texttop=toptext, textbottom="There is already a stone there!\nWhere should a stone be added?", state=state)[0]
 
+        if move == "z" or move == "zzz":
+            return move
+        
         if state[move] == 0:
             break
         else:
@@ -202,7 +205,8 @@ def input_next_move(state: torch.tensor, colour: int, is_late_game : bool, moven
     bottomtext = base
     while True:
         move = gui.input(2, texttop = toptext, textbottom = bottomtext, state = state)
-        if move == "z" or move == "zzz":
+        if move[0] == "z" or move[0] == "zzz":
+            move = move[0]
             return move
         
         coords_from = move[0]
