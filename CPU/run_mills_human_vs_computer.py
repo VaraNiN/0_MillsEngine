@@ -16,8 +16,9 @@ def red(string : str) -> None:
 
 FOLDER = "CPU/Games/"
 
-PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS = 2e5        # How many eval calls are approximately allowed
+PLAYER_COLOUR = -1
+MAX_APPROX_EVAL_CALLS_EARLY = 5e4        # How many eval calls are approximately allowed early
+MAX_APPROX_EVAL_CALLS_MID = 2e5        # How many eval calls are approximately allowed mid to late
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = np.zeros((3,3,3), dtype=int)
@@ -58,7 +59,8 @@ if False:
 
 ### Logic start
 
-MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
+MAX_APPROX_EVAL_CALLS_EARLY = int(MAX_APPROX_EVAL_CALLS_EARLY)
+MAX_APPROX_EVAL_CALLS_MID = int(MAX_APPROX_EVAL_CALLS_MID)
 
 def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX):
     minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
@@ -124,7 +126,7 @@ try:
                     board_state_history.append(np.copy(board_state))
                     player_turn = False
             else: # Computer Move
-                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
+                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS_EARLY, APPROX_PRUNING_FACTOR)
                 if PLAYER_COLOUR == 1:
                     display = "Computer places black stone %i / 9\nwith search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}")
                     print(display)
@@ -158,7 +160,7 @@ try:
                 seconds = int(elapsed_time % 60)
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
-                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS_EARLY:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
 
                 current_eval = eval
                 move_number += 1
@@ -215,7 +217,7 @@ try:
                     board_state_history.append(np.copy(board_state))
                     player_turn = False
             else: # Computer Move
-                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS, APPROX_PRUNING_FACTOR)
+                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS_MID, APPROX_PRUNING_FACTOR)
                 display = "Computer thinking with depth %i (~%s calls)" %(depth, f"{approx_calls:,}")
                 print(display)
 
@@ -238,7 +240,7 @@ try:
                 seconds = int(elapsed_time % 60)
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
-                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS_MID:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
                 current_eval = eval
                 move_number += 1
                 board_state_history.append(np.copy(board_state))

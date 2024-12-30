@@ -410,13 +410,17 @@ def evaluate_position(state : np.array,
                         is_early_game : bool = False, 
                         legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
 
+    if is_early_game:
+        legal_moves_white = 0
+        legal_moves_black = 0
+    else:
+        legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
+        legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
+
     free_spaces = get_neighbor_free(state)
-    terminal = is_terminal_node(state, is_early_game, free_spaces)
+    terminal = is_terminal_node(state, is_early_game, free_spaces, legal_moves_white, legal_moves_black)
     if abs(terminal) == 1:
         return terminal * 9001
-
-    legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
-    legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
     piece_value = state * board_value
     return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black)
@@ -443,13 +447,13 @@ def get_children_mid(state : np.array, colour : int, is_late_game : bool = False
 #@timer_wrap
 def is_terminal_node(state : np.array, 
                         is_early_game : bool = False,
-                        free_spaces : Any  = None) -> int:
+                        free_spaces : int  = None,
+                        legal_moves_white : int = None,
+                        legal_moves_black : int = None) -> int:
 
     num_white_stones, num_black_stones = count_stones(state)
     if free_spaces is None:
         free_spaces = get_neighbor_free(state)
-    legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
-    legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
     # Check for win
     if not is_early_game:
@@ -457,13 +461,18 @@ def is_terminal_node(state : np.array,
             return -1 # Black has won
         if num_black_stones < 3:
             return 1 # White has won
+        
+        if legal_moves_white is None:
+            legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
+        if legal_moves_black is None:
+            legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
-    if num_white_stones > 3:
-        if legal_moves_white == 0:
-            return -1 # Black has won
-    if num_black_stones > 3:
-        if legal_moves_black == 0:
-            return 1 # White has won
+        if num_white_stones > 3:
+            if legal_moves_white == 0:
+                return -1 # Black has won
+        if num_black_stones > 3:
+            if legal_moves_black == 0:
+                return 1 # White has won
     
     return 0 # Still undecided
 
@@ -603,7 +612,6 @@ def calc_depth_for_eval_calls(state : np.array,
         if move_counter < 4:
             approx_calls = ((len(get_children_early(state, 1)) + len(get_children_early(state, -1)))/2.)**(depth_count/pruning_factor)
         elif move_counter < 19:
-            pruning_factor -= 0.2
             approx_calls = ((len(get_children_early(state, 1)) + len(get_children_early(state, -1)))/2.)**(depth_count/pruning_factor)
         else:
             approx_calls = ((len(get_children_mid(state, 1, late_game_white)) + len(get_children_mid(state, -1, late_game_black)))/2.)**(depth_count/pruning_factor)
