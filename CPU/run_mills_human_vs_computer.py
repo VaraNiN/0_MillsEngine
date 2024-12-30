@@ -18,7 +18,7 @@ FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
 MAX_APPROX_EVAL_CALLS_EARLY = 5e4        # How many eval calls are approximately allowed early
-MAX_APPROX_EVAL_CALLS_MID = 2e5        # How many eval calls are approximately allowed mid to late
+MAX_APPROX_EVAL_CALLS_MID = 5e4        # How many eval calls are approximately allowed mid to late
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = np.zeros((3,3,3), dtype=int)
@@ -41,7 +41,7 @@ endgame_white = False
 endgame_black = False
 
 
-if True:
+if False:
     prev_array = board_state
     for i in range(int(1e5)):
         random_array = np.random.choice([-1, 0, 1], size=(3, 3, 3))

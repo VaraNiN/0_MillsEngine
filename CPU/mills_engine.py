@@ -9,11 +9,13 @@ import threading
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.1
 FOUR_NEIGH_POSITIONS_MULTI  = 1.15
-LEGAL_MOVES_WEIGHT          = 0.2
+LEGAL_MOVES_WEIGHT          = 0.1
+OPEN_MILL_WEIGHT            = 0.2
 
 # TODO: Rewrite everything for numpy and add multi-threading
 # TODO: Use AI to train weights
 # TODO: Get better timing class - timings are way off!
+# TODO: Add maximum think time per move of computer
 
 
 
@@ -406,7 +408,8 @@ def new_board_state_mid(state : np.array, move : List[tuple[int]], colour : int)
 def evaluate_position(state : np.array, 
                         board_value : np.array = board_value, 
                         is_early_game : bool = False, 
-                        legal_move_weight : float = LEGAL_MOVES_WEIGHT) -> float:
+                        legal_move_weight : float = LEGAL_MOVES_WEIGHT,
+                        open_mill_weight : float = OPEN_MILL_WEIGHT) -> float:
 
     num_white_stones, num_black_stones = count_stones(state)
     free_spaces = get_neighbor_free(state)
@@ -423,7 +426,8 @@ def evaluate_position(state : np.array,
         return terminal * 9001
 
     piece_value = state * board_value
-    return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black)
+    open_white, open_black = check_possible_mills_array(state)
+    return float(piece_value.sum()) + legal_move_weight * (legal_moves_white - legal_moves_black) + open_mill_weight * (open_white - open_black)
 
 @timer_wrap
 def get_children_early(state : np.array, colour : int):
@@ -653,7 +657,6 @@ def check_possible_mills(state: np.array, colour: int) -> List:
 @timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
     white, black = initialize_mill_array(state)
-    #white, black = len(check_possible_mills(state, 1)), len(check_possible_mills(state, -1))
     if white > 0:
         return None
     elif black > 0:
@@ -666,7 +669,7 @@ def book_moves(state: np.array, colour : int) -> Any:
     return None
 
 
-@timer_wrap
+""" @timer_wrap
 def initialize_mill_list() -> List:
     mills = []
     for i in range(3):
@@ -690,7 +693,7 @@ def check_possible_mills_list(state: np.array) -> List:
     possible_white_mills = np.count_nonzero(results == 2)
     possible_black_mills = np.count_nonzero(results == -2)
     
-    return possible_white_mills, possible_black_mills
+    return possible_white_mills, possible_black_mills """
 
 @timer_wrap
 def initialize_mill_array() -> List:
