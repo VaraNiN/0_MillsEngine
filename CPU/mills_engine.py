@@ -631,11 +631,12 @@ def check_possible_mills(state: np.array, colour: int) -> List:
     positions = list(zip(*indices))
     
     for i, j, k in positions:
-        if state[i - 1, j, k] == colour:
-            if state[i - 2, j, k] == 0:
-                possible_mills.add(((i - 2) % 3, j, k))
-            elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
-                possible_mills.add(((i - 1) % 3, j, k))
+        if j == 1 or k == 1:
+            if state[i - 1, j, k] == colour:
+                if state[i - 2, j, k] == 0:
+                    possible_mills.add(((i - 2) % 3, j, k))
+                elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
+                    possible_mills.add(((i - 1) % 3, j, k))
         if state[i, j - 1, k] == colour:
             if state[i, j - 2, k] == 0:
                 possible_mills.add((i, (j - 2) % 3, k))
@@ -681,9 +682,12 @@ mills_list = initialize_mill_list()
 
 @timer_wrap
 def check_possible_mills_new(state: np.array) -> List:
-    result = np.array([np.sum(state[mill]) for mill in mills_list])
+    results = np.zeros(len(mills_list))
+    for i, mill in enumerate(mills_list):
+        for index in mill:
+            results[i] += state[index]
 
-    possible_white_mills = np.count_nonzero(result == 2)
-    possible_black_mills = np.count_nonzero(result == -2)
+    possible_white_mills = np.count_nonzero(results == 2)
+    possible_black_mills = np.count_nonzero(results == -2)
     
     return possible_white_mills, possible_black_mills
