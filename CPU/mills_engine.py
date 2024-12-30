@@ -211,13 +211,11 @@ def input_next_move(state: np.array, colour: int, is_late_game : bool, moven : i
         
         coords_from = move[0]
         coords_to = move[1]
-        print(coords_from, coords_to)
         if state[coords_from] == colour:
             if state[coords_to] == 0:
                 if is_late_game:
                     break
                 else:
-                    print(get_neighbor_free(state)[coords_from[0]][coords_from[1]][coords_from[2]])
                     if coords_to in get_neighbor_free(state)[coords_from[0]][coords_from[1]][coords_from[2]]:
                         break
                     else:
@@ -654,9 +652,11 @@ def check_possible_mills(state: np.array, colour: int) -> List:
 
 @timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
-    if len(check_possible_mills(state, colour)) > 0:
+    white, black = check_possible_mills_new(state)
+    white, black = len(check_possible_mills(state, 1)), len(check_possible_mills(state, -1))
+    if white > 0:
         return None
-    elif len(check_possible_mills(state, -colour)) > 0:
+    elif black > 0:
         return None
     else:
         for j, k in [[0, 1], [1, 0], [2, 1], [1, 2]]:
@@ -664,3 +664,27 @@ def book_moves(state: np.array, colour : int) -> Any:
                 return 0., new_board_state_early(state, tuple((1, j, k)), colour)[0], 1
             
     return None
+
+
+@timer_wrap
+def initialize_mill_list() -> List:
+    mills = []
+    for i in range(3):
+        for j in [0, 2]:
+            mills.append([(i, 0, j) , (i, 1, 0), (i, 2, 0)])
+            mills.append([(i, j, 0) , (i, j, 1), (i, j, 2)])
+    
+    for i, j in [[0, 1], [1, 0], [1, 2], [2, 1]]:
+        mills.append([(0, i, j), (1, i, j), (2, i, j)])
+    return mills
+
+mills_list = initialize_mill_list()
+
+@timer_wrap
+def check_possible_mills_new(state: np.array) -> List:
+    result = np.array([np.sum(state[mill]) for mill in mills_list])
+
+    possible_white_mills = np.count_nonzero(result == 2)
+    possible_black_mills = np.count_nonzero(result == -2)
+    
+    return possible_white_mills, possible_black_mills
