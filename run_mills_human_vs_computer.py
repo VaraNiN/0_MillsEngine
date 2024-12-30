@@ -41,16 +41,16 @@ finished_flag = False
 endgame_white = False
 endgame_black = False
 
-if True:
+if False:
     board_state_history = torch.load("Sample_Mid.pt")
     board_state = torch.clone(board_state_history[-1])
     move_number = len(board_state_history) - 1
 
 
-if False:
-    board_state_history = torch.load("Sample_Lategame.pt")
-    board_state = torch.clone(board_state_history[-1][1])
-    move_number = 18
+if True:
+    board_state_history = torch.load("Sample_Late.pt")
+    board_state = torch.clone(board_state_history[-1])
+    move_number = len(board_state_history) - 1
 
 MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
 
