@@ -157,7 +157,7 @@ def input_next_add(state: torch.tensor, colour: int, moven : int, eval : float) 
         else:
             move = gui.input(1, texttop=toptext, textbottom="There is already a stone there!\nWhere should a stone be added?", state=state)[0]
 
-        if move == "z" or move == "zzz":
+        if move == "z" or move == "zzz" or move == "ABORT":
             return move
         
         if state[move] == 0:
@@ -178,14 +178,14 @@ def input_next_remove(state: torch.tensor, colour: int, moven : int, eval : floa
         if not invalid_nostone and not invalid_ownstone and not cannot_back:
             move = gui.input(1, texttop=toptext, textbottom="Please remove an opposing stone.", state=state)[0]
         elif cannot_back:
-            move = gui.input(1, texttop=toptext, textbottom="Cannot go back at this stage!\nPlease make a move and go back after.", state=state)[0]
+            move = gui.input(1, texttop=toptext, textbottom="Cannot go back/quit at this stage!\nPlease make a move and go back after.", state=state)[0]
             cannot_back = False
         elif invalid_nostone and not invalid_ownstone:
             move = gui.input(1, texttop=toptext, textbottom="There is no stone there!\nPlease remove an opposing stone.", state=state)[0]
         elif not invalid_nostone and invalid_ownstone:
             move = gui.input(1, texttop=toptext, textbottom="That's your own stone!\nPlease remove an opposing stone.", state=state)[0]
 
-        if move == "z" or move == "zzz":
+        if move == "z" or move == "zzz" or move == "ABORT":
             cannot_back = True
         else:
             if state[move] == -colour:
@@ -205,7 +205,7 @@ def input_next_move(state: torch.tensor, colour: int, is_late_game : bool, moven
     bottomtext = base
     while True:
         move = gui.input(2, texttop = toptext, textbottom = bottomtext, state = state)
-        if move[0] == "z" or move[0] == "zzz":
+        if move[0] == "z" or move[0] == "zzz" or move[0] == "ABORT":
             move = move[0]
             return move
         

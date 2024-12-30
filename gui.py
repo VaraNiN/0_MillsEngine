@@ -125,8 +125,14 @@ def close_board(root : tk.Tk):
 def button_click(root, result, value):
     if value == "ABORT":
         if messagebox.askyesno("Confirm Exit", "Are you sure you want to exit?"):
-            mills.print_report()
-            exit()
+            result.append(value)
+            root.quit()
+        else:
+            pass
+    elif value == "z" or value == "zzz":
+        if messagebox.askyesno("Confirm Return", "Are you sure you want to return to previous position?"):
+            result.append(value)
+            root.quit()
         else:
             pass
     else:
