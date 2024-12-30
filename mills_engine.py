@@ -169,26 +169,25 @@ def input_next_add(state: torch.tensor, colour: int) -> tuple[int]:
 
 @timer_wrap
 def input_next_remove(state: torch.tensor, colour: int) -> None:
+    invalid_nostone = False
+    invalid_ownstone = False
     while True:
-        move = input("Where should a stone be removed? (Format: ring x y): ")
-        if re.match(r'^\d \d \d$', move):
-            coords = tuple(map(int, move.split()))
-            if all(n in {0, 1, 2} for n in coords):
-                if not (coords[1] == 1 and coords[2] == 1):
-                    if state[coords] == -colour:
-                        break
-                    elif state[coords] == colour:
-                        print("Invalid values. Cannot remove your own stones.")
-                    else:
-                        print("Invalid values. No stone there.")
-                else:
-                    print("Invalid values. x and y cannot both be 1")
-            else:
-                print("Invalid values. All have to be 0, 1 or 2")
-        else:
-            print("Invalid format.")
+        if not invalid_nostone and not invalid_ownstone:
+            move = gui.input(1, "Please remove an opposing stone.", state)[0]
+        elif invalid_nostone and not invalid_ownstone:
+            move = gui.input(1, "There is no stone there!\nPlease remove an opposing stone.", state)[0]
+        elif not invalid_nostone and invalid_ownstone:
+            move = gui.input(1, "That's your own stone!\nPlease remove an opposing stone.", state)[0]
 
-    state[coords] = 0
+        if state[move] == -colour:
+            break
+        elif state[move] == colour:
+            invalid_nostone = False
+            invalid_ownstone = True
+        else:
+            invalid_nostone = True
+            invalid_ownstone = False
+    state[move] = 0
 
 @timer_wrap
 def input_next_move(state: torch.tensor, colour: int, is_late_game : bool = False) -> tuple[int]:

@@ -79,10 +79,9 @@ if False:
 
 MAX_APPROX_EVAL_CALLS = int(MAX_APPROX_EVAL_CALLS)
 
-def run_minimax_early(q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event : threading.Event):
+def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX):
     minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
     q.put(minimax_result)
-    print("Test")
     event.set()
 
 def run_minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event):
@@ -150,7 +149,7 @@ try:
                 else:
                     event = threading.Event()
                     q = queue.Queue()
-                    minimax_thread = threading.Thread(target = run_minimax_early, args=(q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, event))
+                    minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX))
                     minimax_thread.start()
                     root = gui.show_board(display, board_state)
                     root.after(100, check_minimax_result, root, event)
