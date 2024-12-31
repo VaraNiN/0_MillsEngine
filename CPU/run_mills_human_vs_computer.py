@@ -17,8 +17,8 @@ def red(string : str) -> None:
 FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS_EARLY = 5e3        # How many eval calls are approximately allowed early
-MAX_APPROX_EVAL_CALLS_MID = 5e3        # How many eval calls are approximately allowed mid to late
+MAX_APPROX_EVAL_CALLS_EARLY = 5e4        # How many eval calls are approximately allowed early
+MAX_APPROX_EVAL_CALLS_MID = 5e4        # How many eval calls are approximately allowed mid to late
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = np.zeros((3,3,3), dtype=int)
@@ -72,7 +72,7 @@ if False:
     move_number = len(board_state_history) - 1
 
 
-if True:
+if False:
     board_state_history = np.load("CPU/Sample_Late.npy")
     board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
     board_state = np.copy(board_state_history[-3])
@@ -87,13 +87,8 @@ if True:
 MAX_APPROX_EVAL_CALLS_EARLY = int(MAX_APPROX_EVAL_CALLS_EARLY)
 MAX_APPROX_EVAL_CALLS_MID = int(MAX_APPROX_EVAL_CALLS_MID)
 
-def run_minimax_early(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX):
-    minimax_result = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
-    q.put(minimax_result)
-    event.set()
-
-def run_minimax_mid(event : threading.Event, q : queue.Queue, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black):
-    minimax_result = mills.minimax_mid(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+def run_minimax(event : threading.Event, q : queue.Queue, board_state, depth, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black):
+    minimax_result = mills.minimax(board_state, depth, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
     q.put(minimax_result)
     event.set()
 
@@ -165,7 +160,7 @@ try:
                     if True:
                         event = threading.Event()
                         q = queue.Queue()
-                        minimax_thread = threading.Thread(target = run_minimax_early, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX))
+                        minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, depth, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, False, False))
                         minimax_thread.start()
                         root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                         root.after(100, check_minimax_result, root, event)
@@ -245,7 +240,7 @@ try:
                 start_time = time.time()
                 event = threading.Event()
                 q = queue.Queue()
-                minimax_thread = threading.Thread(target = run_minimax_mid, args=(event, q, board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black))
+                minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, depth, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black))
                 minimax_thread.start()
                 root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                 root.after(100, check_minimax_result, root, event)

@@ -419,13 +419,19 @@ def new_board_state_mid(state : np.array, move : List[tuple[int]], colour : int)
         
 @timer_wrap
 def evaluate_position(state : np.array, 
+                        move : int, 
                         board_value : np.array = board_value, 
-                        is_early_game : bool = False, 
                         legal_move_weight : float = LEGAL_MOVES_WEIGHT,
-                        open_mill_weight : float = OPEN_MILL_WEIGHT) -> float:
+                        open_mill_weight : float = OPEN_MILL_WEIGHT,
+                        terminal_result : int = None) -> float:
 
     num_white_stones, num_black_stones = count_stones(state)
     free_spaces = get_neighbor_free(state)
+
+    if move < 18:
+        is_early_game = True
+    else:
+        is_early_game = False
 
     if is_early_game or num_white_stones == 3 or num_black_stones == 3:
         legal_moves_white = 0
@@ -434,9 +440,10 @@ def evaluate_position(state : np.array,
         legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
         legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
-    terminal = is_terminal_node(state, is_early_game, free_spaces, legal_moves_white, legal_moves_black, num_white_stones, num_black_stones)
-    if abs(terminal) == 1:
-        return terminal * 9001
+    if terminal_result is not None:
+        terminal_result = is_terminal_node(state, is_early_game, free_spaces, legal_moves_white, legal_moves_black, num_white_stones, num_black_stones)
+    if abs(terminal_result) == 1:
+        return terminal_result * 9001
 
     piece_value = state * board_value
     open_white, open_black = check_possible_mills_array(state)
@@ -497,9 +504,10 @@ def is_terminal_node(state : np.array,
     
     return 0 # Still undecided
 
-@timer_wrap
+""" @timer_wrap
 def minimax_early(node: np.array, 
                   depth: int, 
+                  move: int,
                   alpha: float, 
                   beta: float, 
                   maximizingPlayer: bool, 
@@ -514,7 +522,10 @@ def minimax_early(node: np.array,
     if maximizingPlayer:
         maxEval = float('-inf')
         for child in get_children_early(node, 1):
-            eval, _, call_count = minimax_early(child, depth - 1, alpha, beta, False, call_count)
+            if move < 18:
+                eval, _, call_count = minimax_early(child, depth - 1, move + 1, alpha, beta, False, call_count)
+            else:
+                eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, False, False, False, call_count)
             if eval > maxEval:
                 maxEval = eval
                 best_node = child
@@ -525,16 +536,89 @@ def minimax_early(node: np.array,
     else:
         minEval = float('inf')
         for child in get_children_early(node, -1):
-            eval, _, call_count = minimax_early(child, depth - 1, alpha, beta, True, call_count)
+            if move < 18:
+                eval, _, call_count = minimax_early(child, depth - 1, move + 1, alpha, beta, True, call_count)
+            else:
+                eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, True, False, False, call_count)
             if eval < minEval:
                 minEval = eval
                 best_node = child
             beta = min(beta, eval)
             if beta <= alpha:
                 break  # Alpha cut-off
-        return minEval, best_node, call_count
+        return minEval, best_node, call_count """
     
+
 @timer_wrap
+def minimax(node: np.array, 
+            depth: int, 
+            move: int,
+            alpha: float, 
+            beta: float, 
+            maximizingPlayer: bool, 
+            maximinzing_end: bool,
+            minimizing_end: bool,
+            call_count: int = 0) -> tuple[float, np.array, int]:
+    call_count += 1  # Increment the counter each time the function is called
+
+    if move < 18:
+        is_terminal = is_terminal_node(node, is_early_game=True)
+    else:
+        is_terminal = is_terminal_node(node, is_early_game=False)
+
+    if depth == 0 or abs(is_terminal) == 1:
+        return evaluate_position(node, move=move, terminal_result=is_terminal), node, call_count
+
+    best_node = None
+
+    if maximizingPlayer:
+        maxEval = float('-inf')
+        if move < 18:
+            for child in get_children_early(node, 1):
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, call_count)
+                if eval > maxEval:
+                    maxEval = eval
+                    best_node = child
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break  # Beta cut-off
+            return maxEval, best_node, call_count
+        else:
+            for child in get_children_mid(node, 1, maximinzing_end):
+                maximinzing_end, minimizing_end = get_phase(child)
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count)
+                if eval > maxEval:
+                    maxEval = eval
+                    best_node = child
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break  # Beta cut-off
+            return maxEval, best_node, call_count
+    else:
+        minEval = float('inf')
+        if move < 18:
+            for child in get_children_early(node, -1):
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, call_count)
+                if eval < minEval:
+                    minEval = eval
+                    best_node = child
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break  # Alpha cut-off
+            return minEval, best_node, call_count
+        else:
+            for child in get_children_mid(node, -1, minimizing_end):
+                maximinzing_end, minimizing_end = get_phase(child)
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count)
+                if eval < minEval:
+                    minEval = eval
+                    best_node = child
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break  # Alpha cut-off
+            return minEval, best_node, call_count
+    
+""" @timer_wrap
 def parallel_minimax_early(node: np.array, 
                             depth: int, 
                             alpha: float, 
@@ -576,9 +660,9 @@ def parallel_minimax_early(node: np.array,
                 best_result = results[i][0]
                 best_node = children[i]
 
-    return best_result, best_node, calls
+    return best_result, best_node, calls """
     
-@timer_wrap
+""" @timer_wrap
 def minimax_mid(node: np.array, 
                 depth: int, 
                 alpha: float, 
@@ -617,7 +701,7 @@ def minimax_mid(node: np.array,
             beta = min(beta, eval)
             if beta <= alpha:
                 break  # Alpha cut-off
-        return minEval, best_node, call_count
+        return minEval, best_node, call_count """
     
 
 @timer_wrap
