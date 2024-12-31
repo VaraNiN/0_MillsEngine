@@ -10,26 +10,35 @@ import tkinter as tk
 import gui
 from datetime import datetime
 
-mills.ENABLE_TIMING = True
-
-
+# TODO: FIX WHY COMPUTER SOMETIMES MAKES NO MOVE???
 # TODO: Use AI to train weights
 # TODO: Implement Draw condition
 # TODO: Use hidden values at (i, 1, 1) to encode which players turn it is, and if it's in the late game or not
 
-def red(string : str) -> None:
-    print(cf.RED + string + cs.RESET_ALL)
+### Variables
 
 PLAYER_COLOUR = -1
 CPU_THINK_TIME_EARLY = 3     #[s] How long the computer is allowed to think in the early game
 CPU_THINK_TIME_MID = 8     #[s] How long the computer is allowed to think in the mid and late game
 
-board_state = np.zeros((3,3,3), dtype=int)
-board_state_history = [np.copy(board_state)]
 
+
+
+
+
+
+
+# Start Setup
+def red(string : str) -> None:
+    print(cf.RED + string + cs.RESET_ALL)
+
+mills.ENABLE_TIMING = True
 BASE_ALPHA = float('-inf')
 BASE_BETA = float('inf')
 
+board_state = np.zeros((3,3,3), dtype=int)
+board_state[0, 1, 1] = 3    #(0, 1, 1) records which players turn it is
+board_state_history = [np.copy(board_state)]
 
 if False:
     prev_array = board_state

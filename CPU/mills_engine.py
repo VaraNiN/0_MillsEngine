@@ -11,15 +11,16 @@ import pickle
 
 FOLDER = "CPU/Games/"
 TRANSPO_FILENAME = FOLDER + "000_TRANSPOSITIONS.pkl"
+LOAD_TRANSPO_TABLE = True
 
 ENABLE_TIMING = False
 total_elapsed = 0.
 
 CORNER_POSITION_MULTI = 1.0
-THREE_NEIGH_POSITIONS_MULTI = 1.1
-FOUR_NEIGH_POSITIONS_MULTI  = 1.15
+THREE_NEIGH_POSITIONS_MULTI = 1.2
+FOUR_NEIGH_POSITIONS_MULTI  = 1.4
 LEGAL_MOVES_WEIGHT          = 0.1
-OPEN_MILL_WEIGHT            = 0.2
+OPEN_MILL_WEIGHT            = 0.25
 
 
 ### This timer class is based on that of Gertjan van den Burg
@@ -117,39 +118,7 @@ def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
 @timer_wrap
-def check_position(state: np.array) -> bool:
-    if state.shape != (3, 3, 3):
-        red("Warning: Invalid Board State - Incorrect size")
-        print(state)
-        return False
-    
-    if not np.isin(state, np.array([1, 0, -1])).all():
-        red("Warning: Invalid Board State - Contains invalid values")
-        print(state)
-        return False
-    
-    if not np.isin(state[:, 1, 1], np.array([0])).all():
-        red("Warning: Invalid Board State - Center positions must be 0")
-        print(state)
-        return False
-    
-    if np.sum(state == 1) > 9:
-        red("Warning: Invalid Board State - Too many white stones")
-        print(state)
-        return False
-    
-    if abs(np.sum(state == -1)) > 9:
-        red("Warning: Invalid Board State - Too many black stones")
-        print(state)
-        return False
-    
-    return True
-
-@timer_wrap
-def show_position(state : np.array, check_validity : bool = True, replace_symbols : bool = True) -> None:
-    if check_validity:
-        if not check_position(state):
-            return
+def show_position(state : np.array, replace_symbols : bool = True) -> None:
         
     board_template = """
         {0}-----------{3}-----------{6}
@@ -215,6 +184,7 @@ def input_next_add(state: np.array, colour: int, moven : int, eval : float) -> t
             invalid_flag = True
 
     state[move] = colour
+    state[0, 1, 1] *= -1
     return move
 
 @timer_wrap
@@ -276,6 +246,7 @@ def input_next_move(state: np.array, colour: int, is_late_game : bool, moven : i
 
     state[coords_from] = 0
     state[coords_to] = colour
+    state[0, 1, 1] *= -1
     return coords_to
 
 @timer_wrap
@@ -423,6 +394,7 @@ def new_board_state_early(state : np.array, move : tuple[int], colour : int) -> 
     new_states = []
     original_state = np.copy(state)
     original_state[move] = colour
+    original_state[0, 1, 1] *= -1
     if check_mill(original_state, move):
         for index in removeable_pieces(original_state, colour):
             dummy_state = np.copy(original_state)
@@ -440,6 +412,7 @@ def new_board_state_mid(state : np.array, move : List[tuple[int]], colour : int)
     move_to = move[1]
     original_state[move_from] = 0
     original_state[move_to] = colour
+    original_state[0, 1, 1] *= -1
     if check_mill(original_state, move_to):
         for index in removeable_pieces(original_state, colour):
             dummy_state = np.copy(original_state)
@@ -535,23 +508,29 @@ def is_terminal_node(state : np.array,
                 return 1 # White has won
     
     return 0 # Still undecided
-    
-try:
-    with open(TRANSPO_FILENAME, 'rb') as f:
-        transposition_table = pickle.load(f)
-    print("Successfully loaded transposition table!")
-except:
-    red("Could not loaded transposition table! Creating new one!")
+
+if LOAD_TRANSPO_TABLE: 
+    try:
+        with open(TRANSPO_FILENAME, 'rb') as f:
+            transposition_table = pickle.load(f)
+        print("Successfully loaded transposition table!")
+    except:
+        red("Could not loaded transposition table! Creating new one!")
+        transposition_table = {}
+else:
+    print("Creating new transposition table!")
     transposition_table = {}
 
 @timer_wrap
-def board_to_key(board: np.array) -> str:
-    return board.tostring()
+def node_to_string(node):
+    #return ''.join(map(str, (cell for layer in node for row in layer for cell in row)))
+    return node.tostring()
 
 call_count = 0
 
 @timer_wrap
 def minimax(node: np.array, 
+            parent_node : np.array,
             depth: int, 
             move: int,
             alpha: float, 
@@ -564,15 +543,18 @@ def minimax(node: np.array,
             eval_pre: float = None) -> tuple[float, np.array]:
     global call_count
     call_count += 1  # Increment the counter each time the function is called
-    
+
     # Check if time limit is exceeded
     if start_time and time_limit and (time.time() - start_time > time_limit):
         return None
     
     #Transposition table
-    key = board_to_key(node)
+    key = node_to_string(node)
     if key in transposition_table and transposition_table[key][1] >= depth:
-        return transposition_table[key][0], node
+        if not np.array_equal(node, parent_node):   # Fixes a bug where minimax would immediately return the parent-node if the search depth was shallower than a previous search
+                                                    # This is not bad in and of itself, but together with the time limit this can lead to a situation where
+                                                    # the iterative deepening just returns the same position, which we have to avoid
+            return transposition_table[key][0], node
 
 
     if move < 18:
@@ -606,7 +588,7 @@ def minimax(node: np.array,
 
         if move < 18:
             for child, pre_eval in evaluated_children:
-                result = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, start_time, time_limit, pre_eval)
+                result = minimax(child, parent_node, depth - 1, move + 1, alpha, beta, False, False, False, start_time, time_limit, pre_eval)
                 if result is not None:
                     eval, _ = result
                     if eval > maxEval:
@@ -623,7 +605,7 @@ def minimax(node: np.array,
         else:
             for child, pre_eval in evaluated_children:
                 maximinzing_end, minimizing_end = get_phase(child)
-                result = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, start_time, time_limit, pre_eval)
+                result = minimax(child, parent_node, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, start_time, time_limit, pre_eval)
                 if result is not None:
                     eval, _ = result
                     if eval > maxEval:
@@ -653,7 +635,7 @@ def minimax(node: np.array,
 
         if move < 18:
             for child, pre_eval in evaluated_children:
-                result = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, start_time, time_limit, pre_eval)
+                result = minimax(child, parent_node, depth - 1, move + 1, alpha, beta, True, False, False, start_time, time_limit, pre_eval)
                 if result is not None:
                     eval, _ = result
                     if eval < minEval:
@@ -670,7 +652,7 @@ def minimax(node: np.array,
         else:
             for child, pre_eval in evaluated_children:
                 maximinzing_end, minimizing_end = get_phase(child)
-                result = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, start_time, time_limit, pre_eval)
+                result = minimax(child, parent_node, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, start_time, time_limit, pre_eval)
                 if result is not None:
                     eval, _ = result
                     if eval < minEval:
@@ -692,19 +674,26 @@ def iterative_deepening(node: np.array, move: int, alpha: float, beta: float, ma
     best_node = None
     searched_depth = 0
     current_depth = 0
+    global transposition_table
+    transposition_table = {}
 
     while time.time() - start_time < time_limit / 2.: #If previous depth already took half the time, next depth won't be done in the remaining time
         current_depth += 1
-        result = minimax(node, current_depth, move, alpha, beta, maximizingPlayer, maximinzing_end, minimizing_end, start_time, time_limit)
+        result = minimax(node, node, current_depth, move, alpha, beta, maximizingPlayer, maximinzing_end, minimizing_end, start_time, time_limit)
         if result is not None:
-            best_eval, best_node = result
+            if np.array_equal(node, result[1]):
+                red("Something weird happened in Iterative Deepening at depth %i with callcount %i!" %(current_depth, call_count))
+            current_eval, current_node = result
+            best_eval = current_eval
+            best_node = np.copy(current_node)
             searched_depth = current_depth
         else:
             pass
-
+        
     if best_node is not None:
         return best_eval, best_node, searched_depth
     else:
+        red("Warning! Iterative Deepening yielded no result!")
         return 0., node, 0
     
 @timer_wrap
