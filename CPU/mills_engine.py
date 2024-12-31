@@ -440,7 +440,7 @@ def evaluate_position(state : np.array,
         legal_moves_white = len(legal_moves_mid(state, 1, free_spaces))
         legal_moves_black = len(legal_moves_mid(state, -1, free_spaces))
 
-    if terminal_result is not None:
+    if terminal_result is None:
         terminal_result = is_terminal_node(state, is_early_game, free_spaces, legal_moves_white, legal_moves_black, num_white_stones, num_black_stones)
     if abs(terminal_result) == 1:
         return terminal_result * 9001
@@ -503,50 +503,6 @@ def is_terminal_node(state : np.array,
                 return 1 # White has won
     
     return 0 # Still undecided
-
-""" @timer_wrap
-def minimax_early(node: np.array, 
-                  depth: int, 
-                  move: int,
-                  alpha: float, 
-                  beta: float, 
-                  maximizingPlayer: bool, 
-                  call_count: int = 0) -> tuple[float, np.array, int]:
-    call_count += 1  # Increment the counter each time the function is called
-
-    if depth == 0 or abs(is_terminal_node(node, is_early_game=True)) == 1:
-        return evaluate_position(node, is_early_game=True), node, call_count
-
-    best_node = None
-
-    if maximizingPlayer:
-        maxEval = float('-inf')
-        for child in get_children_early(node, 1):
-            if move < 18:
-                eval, _, call_count = minimax_early(child, depth - 1, move + 1, alpha, beta, False, call_count)
-            else:
-                eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, False, False, False, call_count)
-            if eval > maxEval:
-                maxEval = eval
-                best_node = child
-            alpha = max(alpha, eval)
-            if beta <= alpha:
-                break  # Beta cut-off
-        return maxEval, best_node, call_count
-    else:
-        minEval = float('inf')
-        for child in get_children_early(node, -1):
-            if move < 18:
-                eval, _, call_count = minimax_early(child, depth - 1, move + 1, alpha, beta, True, call_count)
-            else:
-                eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, True, False, False, call_count)
-            if eval < minEval:
-                minEval = eval
-                best_node = child
-            beta = min(beta, eval)
-            if beta <= alpha:
-                break  # Alpha cut-off
-        return minEval, best_node, call_count """
     
 
 @timer_wrap
@@ -573,8 +529,18 @@ def minimax(node: np.array,
 
     if maximizingPlayer:
         maxEval = float('-inf')
+
+        #Get Children
         if move < 18:
-            for child in get_children_early(node, 1):
+            children = get_children_early(node, 1)
+        else:
+            children = get_children_mid(node, 1, maximinzing_end)
+
+        # Evaluate and sort children
+        children = sorted(children, key=lambda child: evaluate_position(child, move=move), reverse=True)
+
+        if move < 18:
+            for child in children:
                 eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, call_count)
                 if eval > maxEval:
                     maxEval = eval
@@ -584,7 +550,7 @@ def minimax(node: np.array,
                     break  # Beta cut-off
             return maxEval, best_node, call_count
         else:
-            for child in get_children_mid(node, 1, maximinzing_end):
+            for child in children:
                 maximinzing_end, minimizing_end = get_phase(child)
                 eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count)
                 if eval > maxEval:
@@ -596,8 +562,19 @@ def minimax(node: np.array,
             return maxEval, best_node, call_count
     else:
         minEval = float('inf')
+
+
+        #Get Children
         if move < 18:
-            for child in get_children_early(node, -1):
+            children = get_children_early(node, -1)
+        else:
+            children = get_children_mid(node, -1, minimizing_end)
+
+        # Evaluate and sort children
+        children = sorted(children, key=lambda child: evaluate_position(child, move=move))
+
+        if move < 18:
+            for child in children:
                 eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, call_count)
                 if eval < minEval:
                     minEval = eval
@@ -607,7 +584,7 @@ def minimax(node: np.array,
                     break  # Alpha cut-off
             return minEval, best_node, call_count
         else:
-            for child in get_children_mid(node, -1, minimizing_end):
+            for child in children:
                 maximinzing_end, minimizing_end = get_phase(child)
                 eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count)
                 if eval < minEval:
@@ -618,92 +595,6 @@ def minimax(node: np.array,
                     break  # Alpha cut-off
             return minEval, best_node, call_count
     
-""" @timer_wrap
-def parallel_minimax_early(node: np.array, 
-                            depth: int, 
-                            alpha: float, 
-                            beta: float, 
-                            maximizingPlayer: bool, 
-                            call_count: int = 0) -> tuple[float, np.array, int]:
-    if maximizingPlayer:
-        children = get_children_early(node, 1)
-    else:
-        children = get_children_early(node, -1)
-
-    threads = []
-    results = [None] * len(children)
-    
-    def thread_function(index, child, depth, alpha, beta, maximizingPlayer):
-        results[index] = minimax_early(child, depth - 1, alpha, beta, maximizingPlayer)
-    
-    for i, child in enumerate(children):
-        thread = threading.Thread(target=thread_function, args=(i, child, depth, alpha, beta, maximizingPlayer))
-        threads.append(thread)
-        thread.start()
-    
-    for thread in threads:
-        thread.join()
-
-    calls = 0
-    if maximizingPlayer:
-        best_result = alpha
-        for i in range(len(results)):
-            calls += results[i][2]
-            if results[i][0] > best_result:
-                best_result = results[i][0]
-                best_node = children[i]
-    else:
-        best_result = beta
-        for i in range(len(results)):
-            calls += results[i][2]
-            if results[i][0] < best_result:
-                best_result = results[i][0]
-                best_node = children[i]
-
-    return best_result, best_node, calls """
-    
-""" @timer_wrap
-def minimax_mid(node: np.array, 
-                depth: int, 
-                alpha: float, 
-                beta: float, 
-                maximizingPlayer: bool,
-                maximinzing_end: bool,
-                minimizing_end: bool,
-                call_count: int = 0) -> tuple[float, np.array, int]:
-    call_count += 1  # Increment the counter each time the function is called
-
-    if depth == 0 or abs(is_terminal_node(node)) == 1:
-        return evaluate_position(node), node, call_count
-
-    best_node = None
-
-    if maximizingPlayer:
-        maxEval = float('-inf')
-        for child in get_children_mid(node, 1, maximinzing_end):
-            maximinzing_end, minimizing_end = get_phase(child)
-            eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count)
-            if eval > maxEval:
-                maxEval = eval
-                best_node = child
-            alpha = max(alpha, eval)
-            if beta <= alpha:
-                break  # Beta cut-off
-        return maxEval, best_node, call_count
-    else:
-        minEval = float('inf')
-        for child in get_children_mid(node, -1, minimizing_end):
-            maximinzing_end, minimizing_end = get_phase(child)
-            eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count)
-            if eval < minEval:
-                minEval = eval
-                best_node = child
-            beta = min(beta, eval)
-            if beta <= alpha:
-                break  # Alpha cut-off
-        return minEval, best_node, call_count """
-    
-
 @timer_wrap
 def calc_depth_for_eval_calls(state : np.array, 
                               move_counter : int, 
@@ -727,32 +618,6 @@ def calc_depth_for_eval_calls(state : np.array,
         depth_count += 1
     return depths[-2], int(np.floor(approx_calls_all[-2]))
 
-""" @timer_wrap
-def check_possible_mills(state: np.array, colour: int) -> List:
-    possible_mills = set()
-    indices = np.where(state == colour)
-    positions = list(zip(*indices))
-    
-    for i, j, k in positions:
-
-        if j == 1 or k == 1:
-            if state[i - 1, j, k] == colour and state[i - 2, j, k] == 0:
-                possible_mills.add(((i - 2) % 3, j, k))
-            elif state[i - 2, j, k] == colour and state[i - 1, j, k] == 0:
-                possible_mills.add(((i - 1) % 3, j, k))
-
-        if state[i, j - 1, k] == colour and state[i, j - 2, k] == 0:
-            possible_mills.add((i, (j - 2) % 3, k))
-        elif state[i, j - 2, k] == colour and state[i, j - 1, k] == 0:
-            possible_mills.add((i, (j - 1) % 3, k))
-
-        if state[i, j, k - 1] == colour and state[i, j, k - 2] == 0:
-            possible_mills.add((i, j, (k - 2) % 3))
-        elif state[i, j, k - 2] == colour and state[i, j, k - 1] == 0:
-            possible_mills.add((i, j, (k - 1) % 3))
-    
-    return list(possible_mills) """
-
 @timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
     white, black = check_possible_mills_array(state)
@@ -766,33 +631,6 @@ def book_moves(state: np.array, colour : int) -> Any:
                 return 0., new_board_state_early(state, tuple((1, j, k)), colour)[0], 1
             
     return None
-
-
-""" @timer_wrap
-def initialize_mill_list() -> List:
-    mills = []
-    for i in range(3):
-        for j in [0, 2]:
-            mills.append([(i, 0, j) , (i, 1, j), (i, 2, j)])
-            mills.append([(i, j, 0) , (i, j, 1), (i, j, 2)])
-    
-    for i, j in [[0, 1], [1, 0], [1, 2], [2, 1]]:
-        mills.append([(0, i, j), (1, i, j), (2, i, j)])
-    return mills
-
-mills_list = initialize_mill_list()
-
-@timer_wrap
-def check_possible_mills_list(state: np.array) -> List:
-    results = np.zeros(len(mills_list))
-    for i, mill in enumerate(mills_list):
-        for index in mill:
-            results[i] += state[index]
-
-    possible_white_mills = np.count_nonzero(results == 2)
-    possible_black_mills = np.count_nonzero(results == -2)
-    
-    return possible_white_mills, possible_black_mills """
 
 @timer_wrap
 def initialize_mill_array() -> List:
