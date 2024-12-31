@@ -7,6 +7,7 @@ import gui
 import threading
 
 ENABLE_TIMING = False
+total_elapsed = 0.
 
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.1
@@ -78,8 +79,9 @@ class Timer(object):
         print("-" * (max_name_length + 45))
 
         # Print total player and computer times
-        print(f"{'Total Player Time':<{max_name_length}} {total_player_time:<10.4f}")
-        print(f"{'Total Computer Time':<{max_name_length}} {total_computer_time:<10.4f}")
+        print(f"{'Player Time':<{max_name_length}} {total_player_time:<10.4f}")
+        print(f"{'Computer Time (indiv.)':<{max_name_length}} {total_computer_time:<10.4f}")
+        print(f"{'Computer Time (comb.)':<{max_name_length}} {total_elapsed:<10.4f}")
 
 TIMER = Timer()
 
@@ -523,6 +525,13 @@ def is_terminal_node(state : np.array,
     return 0 # Still undecided
     
 
+transposition_table = {}
+
+@timer_wrap
+def board_to_key(board: np.array) -> str:
+    return board.tostring()
+
+
 @timer_wrap
 def minimax(node: np.array, 
             depth: int, 
@@ -535,6 +544,12 @@ def minimax(node: np.array,
             call_count: int = 0,
             eval_pre : float = None) -> tuple[float, np.array, int]:
     call_count += 1  # Increment the counter each time the function is called
+    
+    #Transposition table
+    key = board_to_key(node)
+    if key in transposition_table and transposition_table[key][1] >= depth:
+        return transposition_table[key][0], node, call_count
+
 
     if move < 18:
         is_terminal = is_terminal_node(node, is_early_game=True)
@@ -543,8 +558,11 @@ def minimax(node: np.array,
 
     if depth == 0 or abs(is_terminal) == 1:
         if eval_pre is None:
-            return evaluate_position(node, move=move, terminal_result=is_terminal), node, call_count
+            eval = evaluate_position(node, move=move, terminal_result=is_terminal)
+            transposition_table[key] = (eval, depth)
+            return eval, node, call_count
         else:
+            transposition_table[key] = (eval_pre, depth)
             return eval_pre, node, call_count
 
     best_node = None
@@ -571,6 +589,7 @@ def minimax(node: np.array,
                 alpha = max(alpha, eval)
                 if beta <= alpha:
                     break  # Beta cut-off
+            transposition_table[key] = (maxEval, depth)
             return maxEval, best_node, call_count
         else:
             for child, pre_eval in evaluated_children:
@@ -582,6 +601,7 @@ def minimax(node: np.array,
                 alpha = max(alpha, eval)
                 if beta <= alpha:
                     break  # Beta cut-off
+            transposition_table[key] = (maxEval, depth)
             return maxEval, best_node, call_count
     else:
         minEval = float('inf')
@@ -606,6 +626,7 @@ def minimax(node: np.array,
                 beta = min(beta, eval)
                 if beta <= alpha:
                     break  # Alpha cut-off
+            transposition_table[key] = (minEval, depth)
             return minEval, best_node, call_count
         else:
             for child, pre_eval in evaluated_children:
@@ -617,6 +638,7 @@ def minimax(node: np.array,
                 beta = min(beta, eval)
                 if beta <= alpha:
                     break  # Alpha cut-off
+            transposition_table[key] = (minEval, depth)
             return minEval, best_node, call_count
     
 @timer_wrap

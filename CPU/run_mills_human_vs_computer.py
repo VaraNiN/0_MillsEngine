@@ -100,6 +100,8 @@ def check_minimax_result(root : tk.Tk, event : threading.Event):
     else:
         root.after(100, check_minimax_result, root, event)# Check again after 100 ms
 
+total_elapsed_time = 0
+
 try:
     while not finished_flag:
         #mills.show_position(board_state)
@@ -175,6 +177,7 @@ try:
                 
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
+                total_elapsed_time += elapsed_time
 
                 # Convert elapsed time to minutes, seconds, and milliseconds
                 minutes = int(elapsed_time // 60)
@@ -281,7 +284,7 @@ except tk.TclError:
     print("\n")
     pass
 
-
+mills.total_elapsed = total_elapsed_time
 mills.print_report()
 
 np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
