@@ -10,7 +10,7 @@ import os
 import pickle
 
 FOLDER = "CPU/Games/"
-TRANSPO_FILENAME = FOLDER + "TRANSPOSITIONS.pkl"
+TRANSPO_FILENAME = FOLDER + "000_TRANSPOSITIONS.pkl"
 
 ENABLE_TIMING = False
 total_elapsed = 0.

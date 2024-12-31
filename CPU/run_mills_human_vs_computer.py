@@ -15,31 +15,20 @@ mills.ENABLE_TIMING = True
 
 # TODO: Use AI to train weights
 # TODO: Implement Draw condition
+# TODO: Use hidden values at (i, 1, 1) to encode which players turn it is, and if it's in the late game or not
 
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
 
-PLAYER_COLOUR = 1
-CPU_THINK_TIME = 5     #[s] How long the computer is allowed to think
+PLAYER_COLOUR = -1
+CPU_THINK_TIME_EARLY = 3     #[s] How long the computer is allowed to think in the early game
+CPU_THINK_TIME_MID = 8     #[s] How long the computer is allowed to think in the mid and late game
 
 board_state = np.zeros((3,3,3), dtype=int)
 board_state_history = [np.copy(board_state)]
 
 BASE_ALPHA = float('-inf')
 BASE_BETA = float('inf')
-
-if PLAYER_COLOUR == 1:
-    player_turn = True
-    COMPUTER_MAX = False
-else:
-    player_turn = False
-    COMPUTER_MAX = True
-
-current_eval = 0
-move_number = 0
-finished_flag = False
-endgame_white = False
-endgame_black = False
 
 
 if False:
@@ -65,6 +54,11 @@ if False:
     mills.print_report()
     exit()
 
+if False:
+    board_state_history = np.load("CPU/Move_History.npy")
+    board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
+    board_state = np.copy(board_state_history[-4])
+    move_number = len(board_state_history) - 4
 
 if False:
     board_state_history = np.load("CPU/Sample_Mid.npy")
@@ -98,11 +92,32 @@ def check_minimax_result(root : tk.Tk, event : threading.Event):
     else:
         root.after(100, check_minimax_result, root, event)# Check again after 100 ms
 
+current_eval = 0
+move_number = 0
+finished_flag = False
+endgame_white = False
+endgame_black = False
 total_elapsed_time = 0
+
+if move_number % 2 == 0:
+    if PLAYER_COLOUR == 1:
+        COMPUTER_MAX = False
+        player_turn = True
+    else: 
+        COMPUTER_MAX = True
+        player_turn = False
+else:
+    if PLAYER_COLOUR == 1:
+        COMPUTER_MAX = False
+        player_turn = False
+    else:
+        COMPUTER_MAX = True
+        player_turn = True
+
 
 try:
     while not finished_flag:
-        #mills.show_position(board_state)
+        mills.show_position(board_state)
         print("\nMove %i with eval %.2f:" %(move_number + 1, current_eval))
 
         # Early Game
@@ -149,7 +164,7 @@ try:
                 else:
                     display = "Computer places white stone %i" %(move_number // 2 + 1)
                 start_time = time.time()
-                if mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
+                if False: #mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
                     eval, board_state = mills.book_moves(board_state, -PLAYER_COLOUR)
                     calls = 1
                     max_depth = "Bookmove"
@@ -157,7 +172,7 @@ try:
                     event = threading.Event()
                     q = queue.Queue()
                     mills.call_count = 0
-                    minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, False, False, CPU_THINK_TIME))
+                    minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, False, False, CPU_THINK_TIME_EARLY))
                     minimax_thread.start()
                     root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                     root.after(100, check_minimax_result, root, event)
@@ -234,7 +249,7 @@ try:
                 event = threading.Event()
                 q = queue.Queue()
                 mills.call_count = 0
-                minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black, CPU_THINK_TIME))
+                minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black, CPU_THINK_TIME_MID))
                 minimax_thread.start()
                 root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                 root.after(100, check_minimax_result, root, event)
