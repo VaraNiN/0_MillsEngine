@@ -12,10 +12,12 @@ from datetime import datetime
 
 mills.ENABLE_TIMING = True
 
+
+# TODO: Use AI to train weights
+# TODO: Implement Draw condition
+
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)
-
-FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
 CPU_THINK_TIME = 5     #[s] How long the computer is allowed to think
@@ -113,9 +115,7 @@ try:
                 move = mills.input_next_add(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
                 if move == "ABORT":
                     mills.total_elapsed = total_elapsed_time
-                    mills.print_report()
-                    np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
-                    exit()
+                    mills.report_save_quit(board_state_history)
                 elif move == "z":
                     if move_number >= 2:
                         move_number -= 2
@@ -205,9 +205,7 @@ try:
                     move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_black, move_number + 1, current_eval)
                 if move == "ABORT":
                     mills.total_elapsed = total_elapsed_time
-                    mills.print_report()
-                    np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
-                    exit()
+                    mills.report_save_quit(board_state_history)
                 elif move == "z":
                     move_number -= 2
                     board_state = np.copy(board_state_history[move_number])
@@ -280,6 +278,4 @@ except tk.TclError:
     pass
 
 mills.total_elapsed = total_elapsed_time
-mills.print_report()
-
-np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
+mills.report_save_quit(board_state_history)

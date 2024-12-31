@@ -5,6 +5,12 @@ from typing import List, Any
 from colorama import Fore as cf, Style as cs
 import gui
 import threading
+from datetime import datetime
+import os
+import pickle
+
+FOLDER = "CPU/Games/"
+TRANSPO_FILENAME = FOLDER + "TRANSPOSITIONS.pkl"
 
 ENABLE_TIMING = False
 total_elapsed = 0.
@@ -14,12 +20,6 @@ THREE_NEIGH_POSITIONS_MULTI = 1.1
 FOUR_NEIGH_POSITIONS_MULTI  = 1.15
 LEGAL_MOVES_WEIGHT          = 0.1
 OPEN_MILL_WEIGHT            = 0.2
-
-# TODO: Rewrite everything for numpy and add multi-threading
-# TODO: Use AI to train weights
-# TODO: Get better timing class - timings are way off!
-# TODO: Add maximum think time per move of computer
-
 
 
 ### This timer class is based on that of Gertjan van den Burg
@@ -97,8 +97,20 @@ def timer_wrap(func):
             return func(*args, **kwargs)
     return wrapper
 
-def print_report():
+def report_save_quit(history : np.array):
     TIMER.report()
+
+    dir = FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S/")
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    np.save(dir + "Move_History.npy", history)
+
+    with open(TRANSPO_FILENAME, 'wb') as f:
+        pickle.dump(transposition_table, f)
+
+    exit()
+    
 
 
 def red(string : str) -> None:
@@ -524,8 +536,13 @@ def is_terminal_node(state : np.array,
     
     return 0 # Still undecided
     
-
-transposition_table = {}
+try:
+    with open(TRANSPO_FILENAME, 'rb') as f:
+        transposition_table = pickle.load(f)
+    print("Successfully loaded transposition table!")
+except:
+    red("Could not loaded transposition table! Creating new one!")
+    transposition_table = {}
 
 @timer_wrap
 def board_to_key(board: np.array) -> str:
