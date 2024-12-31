@@ -10,6 +10,7 @@ import tkinter as tk
 import gui
 from datetime import datetime
 
+mills.ENABLE_TIMING = True
 
 def red(string : str) -> None:
     print(cf.RED + string + cs.RESET_ALL)

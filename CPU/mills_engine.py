@@ -6,6 +6,8 @@ from colorama import Fore as cf, Style as cs
 import gui
 import threading
 
+ENABLE_TIMING = False
+
 CORNER_POSITION_MULTI = 1.0
 THREE_NEIGH_POSITIONS_MULTI = 1.1
 FOUR_NEIGH_POSITIONS_MULTI  = 1.15
@@ -27,6 +29,7 @@ class Timer(object):
         self.call_counts = {}
         self._stack = []
         self.start = None
+        self.player_moves = ["input_next_add", "input_next_remove", "input_next_move"]
 
     def add_to_timer(self, name, duration):
         if name not in self.timers:
@@ -61,20 +64,35 @@ class Timer(object):
         print(f"{'Function':<{max_name_length}} {'Time (s)':<10} {'Calls':<10} {'Avg Time (µs)':<15}")
         print("-" * (max_name_length + 45))
         
+        total_player_time = 0.
+        total_computer_time = 0.
         # Print each function's timing report with dynamic width for function names
         for name, duration in self.timers.items():
             avg_time_us = (duration / self.call_counts[name]) * 1e6
             print(f"{name:<{max_name_length}} {duration:<10.4f} {self.call_counts[name]:<10} {avg_time_us:<15.2f}")
+            if name in self.player_moves:
+                total_player_time += duration
+            else:
+                total_computer_time += duration
+        
+        print("-" * (max_name_length + 45))
+
+        # Print total player and computer times
+        print(f"{'Total Player Time':<{max_name_length}} {total_player_time:<10.4f}")
+        print(f"{'Total Computer Time':<{max_name_length}} {total_computer_time:<10.4f}")
 
 TIMER = Timer()
 
 def timer_wrap(func):
     def wrapper(*args, **kwargs):
-        name = func.__name__
-        TIMER.stack(name)
-        ans = func(*args, **kwargs)
-        TIMER.pop()
-        return ans
+        if ENABLE_TIMING:
+            name = func.__name__
+            TIMER.stack(name)
+            ans = func(*args, **kwargs)
+            TIMER.pop()
+            return ans
+        else:
+            return func(*args, **kwargs)
     return wrapper
 
 def print_report():
