@@ -150,6 +150,21 @@ def count_stones(state: np.array) -> List[int]:
     return [white, black]
 
 @timer_wrap
+def get_phase(state: np.array) -> List[bool]:
+    w, b = count_stones(state)
+    if w > 3:
+        ww = False
+    else:
+        ww = True
+
+    if b > 3:
+        bb = False
+    else:
+        bb = True
+    
+    return ww, bb
+
+@timer_wrap
 def input_next_add(state: np.array, colour: int, moven : int, eval : float) -> tuple[int]:
     invalid_flag = False
     toptext = "Move %i with eval %.2f" %(moven, eval)
@@ -582,6 +597,7 @@ def minimax_mid(node: np.array,
     if maximizingPlayer:
         maxEval = float('-inf')
         for child in get_children_mid(node, 1, maximinzing_end):
+            maximinzing_end, minimizing_end = get_phase(child)
             eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count)
             if eval > maxEval:
                 maxEval = eval
@@ -593,6 +609,7 @@ def minimax_mid(node: np.array,
     else:
         minEval = float('inf')
         for child in get_children_mid(node, -1, minimizing_end):
+            maximinzing_end, minimizing_end = get_phase(child)
             eval, _, call_count = minimax_mid(child, depth - 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count)
             if eval < minEval:
                 minEval = eval

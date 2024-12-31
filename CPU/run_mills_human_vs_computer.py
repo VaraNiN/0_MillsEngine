@@ -205,11 +205,7 @@ try:
         # Mid and End Game
         else:
             # Check for end game
-            white_stones_left, black_stones_left = mills.count_stones(board_state)
-            if white_stones_left <= 3:
-                endgame_white = True
-            if black_stones_left <= 3:
-                endgame_black = True
+            endgame_white, endgame_black = mills.get_phase(board_state)
 
             if player_turn: # Player Move
                 if PLAYER_COLOUR == 1:
