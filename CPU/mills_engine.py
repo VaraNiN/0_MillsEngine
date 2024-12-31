@@ -532,7 +532,8 @@ def minimax(node: np.array,
             maximizingPlayer: bool, 
             maximinzing_end: bool,
             minimizing_end: bool,
-            call_count: int = 0) -> tuple[float, np.array, int]:
+            call_count: int = 0,
+            eval_pre : float = None) -> tuple[float, np.array, int]:
     call_count += 1  # Increment the counter each time the function is called
 
     if move < 18:
@@ -541,7 +542,10 @@ def minimax(node: np.array,
         is_terminal = is_terminal_node(node, is_early_game=False)
 
     if depth == 0 or abs(is_terminal) == 1:
-        return evaluate_position(node, move=move, terminal_result=is_terminal), node, call_count
+        if eval_pre is None:
+            return evaluate_position(node, move=move, terminal_result=is_terminal), node, call_count
+        else:
+            return eval_pre, node, call_count
 
     best_node = None
 
@@ -554,12 +558,13 @@ def minimax(node: np.array,
         else:
             children = get_children_mid(node, 1, maximinzing_end)
 
-        # Evaluate and sort children
-        children = sorted(children, key=lambda child: evaluate_position(child, move=move), reverse=True)
+        # Evaluate and sort moves
+        evaluated_children = [(child, evaluate_position(child, move = move + 1)) for child in children]
+        evaluated_children.sort(key=lambda x: x[1], reverse=True)
 
         if move < 18:
-            for child in children:
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, call_count)
+            for child, pre_eval in evaluated_children:
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, call_count, pre_eval)
                 if eval > maxEval:
                     maxEval = eval
                     best_node = child
@@ -568,9 +573,9 @@ def minimax(node: np.array,
                     break  # Beta cut-off
             return maxEval, best_node, call_count
         else:
-            for child in children:
+            for child, pre_eval in evaluated_children:
                 maximinzing_end, minimizing_end = get_phase(child)
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count)
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count, pre_eval)
                 if eval > maxEval:
                     maxEval = eval
                     best_node = child
@@ -588,12 +593,13 @@ def minimax(node: np.array,
         else:
             children = get_children_mid(node, -1, minimizing_end)
 
-        # Evaluate and sort children
-        children = sorted(children, key=lambda child: evaluate_position(child, move=move))
+        # Evaluate and sort moves
+        evaluated_children = [(child, evaluate_position(child, move = move + 1)) for child in children]
+        evaluated_children.sort(key=lambda x: x[1])
 
         if move < 18:
-            for child in children:
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, call_count)
+            for child, pre_eval in evaluated_children:
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, call_count, pre_eval)
                 if eval < minEval:
                     minEval = eval
                     best_node = child
@@ -602,9 +608,9 @@ def minimax(node: np.array,
                     break  # Alpha cut-off
             return minEval, best_node, call_count
         else:
-            for child in children:
+            for child, pre_eval in evaluated_children:
                 maximinzing_end, minimizing_end = get_phase(child)
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count)
+                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count, pre_eval)
                 if eval < minEval:
                     minEval = eval
                     best_node = child
