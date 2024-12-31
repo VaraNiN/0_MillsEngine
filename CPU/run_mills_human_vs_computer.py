@@ -17,8 +17,8 @@ def red(string : str) -> None:
 FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS_EARLY = 5e4        # How many eval calls are approximately allowed early
-MAX_APPROX_EVAL_CALLS_MID = 5e4        # How many eval calls are approximately allowed mid to late
+MAX_APPROX_EVAL_CALLS_EARLY = 5e3        # How many eval calls are approximately allowed early
+MAX_APPROX_EVAL_CALLS_MID = 5e3        # How many eval calls are approximately allowed mid to late
 APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
 
 board_state = np.zeros((3,3,3), dtype=int)
@@ -65,18 +65,18 @@ if False:
     exit()
 
 
-if True:
+if False:
     board_state_history = np.load("CPU/Sample_Mid.npy")
     board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
     board_state = np.copy(board_state_history[-1])
     move_number = len(board_state_history) - 1
 
 
-if False:
+if True:
     board_state_history = np.load("CPU/Sample_Late.npy")
     board_state_history = [board_state_history[i] for i in range(board_state_history.shape[0])]
-    board_state = np.copy(board_state_history[-1])
-    move_number = len(board_state_history) - 1
+    board_state = np.copy(board_state_history[-3])
+    move_number = len(board_state_history) - 3
 
 
 

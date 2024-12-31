@@ -341,21 +341,19 @@ def legal_moves_mid(state : np.array, colour : int, free_spaces : Any = None) ->
     pieces = list(zip(*indices))
     for index in pieces:
         i, j, k = index
-        if not (j == 1 and k == 1):
-            for free in free_spaces[i][j][k]:
-                moves.append([tuple((i, j, k)), tuple(free)])
+        for free in free_spaces[i][j][k]:
+            moves.append([tuple((i, j, k)), tuple(free)])
     return moves
 
 @timer_wrap
-def legal_moves_end(state : np.array, colour : int, free_spaces : Any = None) -> List:
+def legal_moves_end(state : np.array, colour : int) -> List:
     moves = []
     indices = np.where(state == colour)
     pieces = list(zip(*indices))
     empty = legal_moves_early(state)
     for index in pieces:
-        if not (index[1] == 1 and index[2] == 1):
-            for emp in empty:
-                moves.append([tuple(index), tuple(emp)])
+        for emp in empty:
+            moves.append([tuple(index), tuple(emp)])
     return moves
 
 @timer_wrap
@@ -656,7 +654,7 @@ def check_possible_mills(state: np.array, colour: int) -> List:
 
 @timer_wrap
 def book_moves(state: np.array, colour : int) -> Any:
-    white, black = initialize_mill_array(state)
+    white, black = check_possible_mills_array(state)
     if white > 0:
         return None
     elif black > 0:
