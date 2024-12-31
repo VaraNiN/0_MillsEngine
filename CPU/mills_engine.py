@@ -531,6 +531,7 @@ transposition_table = {}
 def board_to_key(board: np.array) -> str:
     return board.tostring()
 
+call_count = 0
 
 @timer_wrap
 def minimax(node: np.array, 
@@ -541,14 +542,20 @@ def minimax(node: np.array,
             maximizingPlayer: bool, 
             maximinzing_end: bool,
             minimizing_end: bool,
-            call_count: int = 0,
-            eval_pre : float = None) -> tuple[float, np.array, int]:
+            start_time: float = None,
+            time_limit: float = None,
+            eval_pre: float = None) -> tuple[float, np.array]:
+    global call_count
     call_count += 1  # Increment the counter each time the function is called
+    
+    # Check if time limit is exceeded
+    if start_time and time_limit and (time.time() - start_time > time_limit):
+        return None
     
     #Transposition table
     key = board_to_key(node)
     if key in transposition_table and transposition_table[key][1] >= depth:
-        return transposition_table[key][0], node, call_count
+        return transposition_table[key][0], node
 
 
     if move < 18:
@@ -557,13 +564,13 @@ def minimax(node: np.array,
         is_terminal = is_terminal_node(node, is_early_game=False)
 
     if depth == 0 or abs(is_terminal) == 1:
-        if eval_pre is None:
+        if eval_pre is not None:
+            transposition_table[key] = (eval_pre, depth)
+            return eval_pre, node
+        else:
             eval = evaluate_position(node, move=move, terminal_result=is_terminal)
             transposition_table[key] = (eval, depth)
-            return eval, node, call_count
-        else:
-            transposition_table[key] = (eval_pre, depth)
-            return eval_pre, node, call_count
+            return eval, node
 
     best_node = None
 
@@ -582,27 +589,37 @@ def minimax(node: np.array,
 
         if move < 18:
             for child, pre_eval in evaluated_children:
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, call_count, pre_eval)
-                if eval > maxEval:
-                    maxEval = eval
-                    best_node = child
-                alpha = max(alpha, eval)
-                if beta <= alpha:
-                    break  # Beta cut-off
-            transposition_table[key] = (maxEval, depth)
-            return maxEval, best_node, call_count
+                result = minimax(child, depth - 1, move + 1, alpha, beta, False, False, False, start_time, time_limit, pre_eval)
+                if result is not None:
+                    eval, _ = result
+                    if eval > maxEval:
+                        maxEval = eval
+                        best_node = child
+                    alpha = max(alpha, eval)
+                    if beta <= alpha:
+                        break  # Beta cut-off
+                else:
+                    return None
+            if maxEval > float('-inf'):
+                transposition_table[key] = (maxEval, depth)
+            return maxEval, best_node
         else:
             for child, pre_eval in evaluated_children:
                 maximinzing_end, minimizing_end = get_phase(child)
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, call_count, pre_eval)
-                if eval > maxEval:
-                    maxEval = eval
-                    best_node = child
-                alpha = max(alpha, eval)
-                if beta <= alpha:
-                    break  # Beta cut-off
-            transposition_table[key] = (maxEval, depth)
-            return maxEval, best_node, call_count
+                result = minimax(child, depth - 1, move + 1, alpha, beta, False, maximinzing_end, minimizing_end, start_time, time_limit, pre_eval)
+                if result is not None:
+                    eval, _ = result
+                    if eval > maxEval:
+                        maxEval = eval
+                        best_node = child
+                    alpha = max(alpha, eval)
+                    if beta <= alpha:
+                        break  # Beta cut-off
+                else:
+                    return None
+            if maxEval > float('-inf'):
+                transposition_table[key] = (maxEval, depth)
+            return maxEval, best_node
     else:
         minEval = float('inf')
 
@@ -619,27 +636,59 @@ def minimax(node: np.array,
 
         if move < 18:
             for child, pre_eval in evaluated_children:
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, call_count, pre_eval)
-                if eval < minEval:
-                    minEval = eval
-                    best_node = child
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break  # Alpha cut-off
-            transposition_table[key] = (minEval, depth)
-            return minEval, best_node, call_count
+                result = minimax(child, depth - 1, move + 1, alpha, beta, True, False, False, start_time, time_limit, pre_eval)
+                if result is not None:
+                    eval, _ = result
+                    if eval < minEval:
+                        minEval = eval
+                        best_node = child
+                    beta = min(beta, eval)
+                    if beta <= alpha:
+                        break  # Alpha cut-off
+                else:
+                    return None
+            if minEval < float('inf'):
+                transposition_table[key] = (minEval, depth)
+            return minEval, best_node
         else:
             for child, pre_eval in evaluated_children:
                 maximinzing_end, minimizing_end = get_phase(child)
-                eval, _, call_count = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, call_count, pre_eval)
-                if eval < minEval:
-                    minEval = eval
-                    best_node = child
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break  # Alpha cut-off
-            transposition_table[key] = (minEval, depth)
-            return minEval, best_node, call_count
+                result = minimax(child, depth - 1, move + 1, alpha, beta, True, maximinzing_end, minimizing_end, start_time, time_limit, pre_eval)
+                if result is not None:
+                    eval, _ = result
+                    if eval < minEval:
+                        minEval = eval
+                        best_node = child
+                    beta = min(beta, eval)
+                    if beta <= alpha:
+                        break  # Alpha cut-off
+                else:
+                    return None
+            if minEval < float('inf'):
+                transposition_table[key] = (minEval, depth)
+            return minEval, best_node
+        
+@timer_wrap
+def iterative_deepening(node: np.array, move: int, alpha: float, beta: float, maximizingPlayer: bool, maximinzing_end: bool, minimizing_end: bool, time_limit: float) -> list[float, np.array]:
+    start_time = time.time()
+    best_eval = float('-inf') if maximizingPlayer else float('inf')
+    best_node = None
+    searched_depth = 0
+    current_depth = 0
+
+    while time.time() - start_time < time_limit / 2.: #If previous depth already took half the time, next depth won't be done in the remaining time
+        current_depth += 1
+        result = minimax(node, current_depth, move, alpha, beta, maximizingPlayer, maximinzing_end, minimizing_end, start_time, time_limit)
+        if result is not None:
+            best_eval, best_node = result
+            searched_depth = current_depth
+        else:
+            pass
+
+    if best_node is not None:
+        return best_eval, best_node, searched_depth
+    else:
+        return 0., node, 0
     
 @timer_wrap
 def calc_depth_for_eval_calls(state : np.array, 
@@ -674,7 +723,7 @@ def book_moves(state: np.array, colour : int) -> Any:
     else:
         for j, k in [[0, 1], [1, 0], [2, 1], [1, 2]]:
             if state[1, j, k] == 0:
-                return 0., new_board_state_early(state, tuple((1, j, k)), colour)[0], 1
+                return 0., new_board_state_early(state, tuple((1, j, k)), colour)[0]
             
     return None
 

@@ -18,9 +18,7 @@ def red(string : str) -> None:
 FOLDER = "CPU/Games/"
 
 PLAYER_COLOUR = 1
-MAX_APPROX_EVAL_CALLS_EARLY = 5e4        # How many eval calls are approximately allowed early
-MAX_APPROX_EVAL_CALLS_MID = 5e4        # How many eval calls are approximately allowed mid to late
-APPROX_PRUNING_FACTOR = 1.5        # Approximation of how well alpha-beta pruning works. Worst case = 1.; Best Case = 2.
+CPU_THINK_TIME = 5     #[s] How long the computer is allowed to think
 
 board_state = np.zeros((3,3,3), dtype=int)
 board_state_history = [np.copy(board_state)]
@@ -85,11 +83,9 @@ if False:
 
 ### Logic start
 
-MAX_APPROX_EVAL_CALLS_EARLY = int(MAX_APPROX_EVAL_CALLS_EARLY)
-MAX_APPROX_EVAL_CALLS_MID = int(MAX_APPROX_EVAL_CALLS_MID)
-
-def run_minimax(event : threading.Event, q : queue.Queue, board_state, depth, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black):
-    minimax_result = mills.minimax(board_state, depth, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
+def run_minimax(event : threading.Event, q : queue.Queue, board_state, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black, time_limit):
+    minimax_result = mills.iterative_deepening(board_state, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black, time_limit)
+    #minimax_result = mills.minimax(board_state, 4, move, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black)
     q.put(minimax_result)
     event.set()
 
@@ -115,8 +111,8 @@ try:
                 else:
                     print("Please place black stone %i / 9" %(move_number // 2 + 1))
                 move = mills.input_next_add(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
-                #current_eval = mills.evaluate_position(board_state, is_early_game=True)
                 if move == "ABORT":
+                    mills.total_elapsed = total_elapsed_time
                     mills.print_report()
                     np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
                     exit()
@@ -144,36 +140,32 @@ try:
                     if mills.check_mill(board_state, move):
                         #mills.show_position(board_state)
                         mills.input_next_remove(board_state, PLAYER_COLOUR, move_number + 1, current_eval)
-                        #current_eval = mills.evaluate_position(board_state, is_early_game=True)
                     move_number += 1
                     board_state_history.append(np.copy(board_state))
                     player_turn = False
             else: # Computer Move
-                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, True, False, False, MAX_APPROX_EVAL_CALLS_EARLY, APPROX_PRUNING_FACTOR)
                 if PLAYER_COLOUR == 1:
-                    display = "Computer places black stone %i / 9\nwith search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}")
-                    print(display)
+                    display = "Computer places black stone %i" %(move_number // 2 + 1)
                 else:
-                    display = "Computer places white stone %i / 9\nwith search depth %i (~%s calls)" %(move_number // 2 + 1, depth, f"{approx_calls:,}")
-                    print(display)
+                    display = "Computer places white stone %i" %(move_number // 2 + 1)
                 start_time = time.time()
                 if mills.book_moves(board_state, -PLAYER_COLOUR) is not None:
-                    eval, board_state, calls = mills.book_moves(board_state, -PLAYER_COLOUR)
+                    eval, board_state = mills.book_moves(board_state, -PLAYER_COLOUR)
+                    calls = 1
+                    max_depth = "Bookmove"
                 else:
-                    if True:
-                        event = threading.Event()
-                        q = queue.Queue()
-                        minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, depth, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, False, False))
-                        minimax_thread.start()
-                        root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
-                        root.after(100, check_minimax_result, root, event)
-                        root.mainloop()
-                        minimax_thread.join()
-                        eval, board_state, calls = q.get()
-                    else:
-                        #eval, board_state, calls = mills.minimax_early_multi(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, max_workers=MAX_THREADS)
-                        eval, board_state, calls = mills.parallel_minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
-                        #eval, board_state, calls = mills.minimax_early(board_state, depth, BASE_ALPHA, BASE_BETA, COMPUTER_MAX)
+                    event = threading.Event()
+                    q = queue.Queue()
+                    mills.call_count = 0
+                    minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, False, False, CPU_THINK_TIME))
+                    minimax_thread.start()
+                    root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
+                    root.after(100, check_minimax_result, root, event)
+                    root.mainloop()
+                    minimax_thread.join()
+                    #eval, board_state = q.get()
+                    eval, board_state, max_depth = q.get()
+                    calls = mills.call_count
                 
                 end_time = time.time()# Calculate the elapsed time
                 elapsed_time = end_time - start_time
@@ -184,7 +176,7 @@ try:
                 seconds = int(elapsed_time % 60)
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
-                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS_EARLY:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                print(f"Move made after {calls:,} calls at depth {max_depth}: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
 
                 current_eval = eval
                 move_number += 1
@@ -212,6 +204,7 @@ try:
                 else:
                     move = mills.input_next_move(board_state, PLAYER_COLOUR, endgame_black, move_number + 1, current_eval)
                 if move == "ABORT":
+                    mills.total_elapsed = total_elapsed_time
                     mills.print_report()
                     np.save(FOLDER + datetime.now().strftime("%Y-%m-%d_%H:%M:%S") + ".npy", board_state_history)
                     exit()
@@ -237,30 +230,32 @@ try:
                     board_state_history.append(np.copy(board_state))
                     player_turn = False
             else: # Computer Move
-                depth, approx_calls = mills.calc_depth_for_eval_calls(board_state, False, endgame_white, endgame_black, MAX_APPROX_EVAL_CALLS_MID, APPROX_PRUNING_FACTOR)
-                display = "Computer thinking with depth %i (~%s calls)" %(depth, f"{approx_calls:,}")
-                print(display)
+                display = "Computer is thinking..."
 
                 start_time = time.time()
                 event = threading.Event()
                 q = queue.Queue()
-                minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, depth, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black))
+                mills.call_count = 0
+                minimax_thread = threading.Thread(target = run_minimax, args=(event, q, board_state, move_number, BASE_ALPHA, BASE_BETA, COMPUTER_MAX, endgame_white, endgame_black, CPU_THINK_TIME))
                 minimax_thread.start()
                 root = gui.show_board(texttop="Move %i with eval %.2f:" %(move_number + 1, current_eval), textbottom=display, state=board_state)
                 root.after(100, check_minimax_result, root, event)
                 root.mainloop()
                 minimax_thread.join()
-                eval, board_state, calls = q.get()
+                eval, board_state, max_depth = q.get()
+                calls = mills.call_count
+
                 end_time = time.time()# Calculate the elapsed time
 
                 elapsed_time = end_time - start_time
+                total_elapsed_time += elapsed_time
 
                 # Convert elapsed time to minutes, seconds, and milliseconds
                 minutes = int(elapsed_time // 60)
                 seconds = int(elapsed_time % 60)
                 milliseconds = int((elapsed_time * 1000) % 1000)
 
-                print(f"Move made after {calls:,} of {MAX_APPROX_EVAL_CALLS_MID:,} calls: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
+                print(f"Move made after {calls:,} calls at depth {max_depth}: {minutes} minutes, {seconds} seconds, {milliseconds} milliseconds")
                 current_eval = eval
                 move_number += 1
                 board_state_history.append(np.copy(board_state))
