@@ -162,6 +162,39 @@ std::vector<int> runMillsBoard(BoardState& state, int inputs) {
     sf::RenderWindow window(sf::VideoMode(600, 700), "Mills Board Click Tracker");
     std::vector<int> result;
 
+    int fontsize = 20;
+
+    // Create buttons
+    sf::RectangleShape button1(sf::Vector2f(150, 50));
+    button1.setPosition(50, 600);
+    button1.setFillColor(sf::Color(230, 230, 250)); // Lavender
+
+    sf::RectangleShape button2(sf::Vector2f(150, 50));
+    button2.setPosition(225, 600);
+    button2.setFillColor(sf::Color(75, 0, 130)); // Dark Purple (Indigo)
+
+    sf::RectangleShape button3(sf::Vector2f(150, 50));
+    button3.setPosition(400, 600);
+    button3.setFillColor(sf::Color(139, 0, 0)); // Dark Red
+
+    sf::Font font;
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+        std::cerr << "Failed to load font 'DejaVuSans.ttf'" << std::endl;
+        return result;
+    }
+
+    sf::Text text1("Revert Half", font, fontsize);
+    text1.setPosition(60, 610);
+    text1.setFillColor(sf::Color::Black);
+
+    sf::Text text2("Revert Full", font, fontsize);
+    text2.setPosition(235, 610);
+    text2.setFillColor(sf::Color::White);
+
+    sf::Text text3("Abort Game", font, fontsize);
+    text3.setPosition(410, 610);
+    text3.setFillColor(sf::Color::White);
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -171,11 +204,24 @@ std::vector<int> runMillsBoard(BoardState& state, int inputs) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     int x = event.mouseButton.x;
                     int y = event.mouseButton.y;
-                    int vicinity = getVicinity(x, y);
-                    if (vicinity != -1 && result.size() < inputs) {
-                        result.push_back(vicinity);
-                        if (result.size() == inputs) {
-                            window.close();
+
+                    // Check if buttons are clicked
+                    if (button1.getGlobalBounds().contains(x, y)) {
+                        result.push_back(-1);
+                        window.close();
+                    } else if (button2.getGlobalBounds().contains(x, y)) {
+                        result.push_back(-2);
+                        window.close();
+                    } else if (button3.getGlobalBounds().contains(x, y)) {
+                        result.push_back(-3);
+                        window.close();
+                    } else {
+                        int vicinity = getVicinity(x, y, 0, 20); // Adjust offset and radius as needed
+                        if (vicinity != -1 && result.size() < inputs) {
+                            result.push_back(vicinity);
+                            if (result.size() == inputs) {
+                                window.close();
+                            }
                         }
                     }
                 }
@@ -183,7 +229,13 @@ std::vector<int> runMillsBoard(BoardState& state, int inputs) {
         }
 
         window.clear(sf::Color::White); // Set background color to white
-        createMillsBoard(window, state);
+        createMillsBoard(window, state, 600, 600, 0, 20); // Adjust width, height, offset, and radius as needed
+        window.draw(button1);
+        window.draw(button2);
+        window.draw(button3);
+        window.draw(text1);
+        window.draw(text2);
+        window.draw(text3);
         window.display();
     }
 
