@@ -1,0 +1,26 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-std=c++17",
+                "-I${workspaceFolder}/CPU_cpp/include",
+                "${workspaceFolder}/CPU_cpp/src/*.cpp",
+                "-o",
+                "${workspaceFolder}/CPU_cpp/main",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Generated task for building the project."
+        }
+    ]
+}
