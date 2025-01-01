@@ -23,9 +23,16 @@ class History {
 public:
     void saveState(const BoardState& state);
     const std::vector<BoardState>& getHistory() const;
+    void deleteEntry(size_t index);
+    void deleteLastEntry();
+    void clearHistory();
 
 private:
     std::vector<BoardState> history;
 };
+
+void checkPhase(BoardState& state);
+
+void inputAdd(BoardState& state, History& history);
 
 #endif // ENGINE_H
