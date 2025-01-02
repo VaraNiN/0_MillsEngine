@@ -26,30 +26,36 @@ std::bitset<24> generateRandomBitset() {
     return randomBitset;
 }
 
-void timeStuff(BoardState state, int its) {
-    std::bitset<50> key;
-
-
-
+void timeStuff(const BoardState& state, int its, int pos_every) {
     auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < its; i++){
-        // enter Function here
-        key = generateKey(state);
-    }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
-    std::cout << "Operations took: " << duration.count() << " seconds\n";
-    std::cout << "Average: " << 1e6 * duration.count() / its << " µs\n\n";
+    BoardState dummyState = state;
+    if (!dummyState.whitePieces.any() & !dummyState.blackPieces.any()) {
+        dummyState.whitePieces = generateRandomBitset();
+        dummyState.blackPieces = generateRandomBitset();
+    }
 
-
+    float eval;
 
     start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < its; i++){
+        if (i % pos_every == 0) {
+            end = std::chrono::high_resolution_clock::now();
+            duration += end - start;
+            if (!dummyState.whitePieces.any() & !dummyState.blackPieces.any()) {
+                dummyState.whitePieces = generateRandomBitset();
+                dummyState.blackPieces = generateRandomBitset();
+            }
+            start = std::chrono::high_resolution_clock::now();
+        }
         // enter Function here
-        key = generateKey(state);
+        eval = evaluate(dummyState);
     }
     end = std::chrono::high_resolution_clock::now();
-    duration = end - start;
+    duration += end - start;
     std::cout << "Operations took: " << duration.count() << " seconds\n";
     std::cout << "Average: " << 1e6 * duration.count() / its << " µs\n\n";
+
+
 }

@@ -10,13 +10,8 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    float eval = evaluate(state);
+    timeStuff(state);
 
-    while (true) {
-        eval = evaluate(state);
-        print(eval);
-        inputAdd(state, history);
-    }
 
 
     //state.whitePieces = generateRandomBitset();
