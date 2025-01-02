@@ -10,7 +10,12 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    timeStuff(state);
+    while (true) {
+        inputAdd(state, history);
+        auto [eval, newState] = minimax(state, 3, -10000, 10000, false);
+        state = newState;
+        history.saveState(state);
+    }
 
 
 

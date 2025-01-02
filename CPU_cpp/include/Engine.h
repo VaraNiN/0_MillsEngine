@@ -189,4 +189,6 @@ Colours getPossibleMidGameMoveNumbers(const BoardState& state);
 
 float evaluate(const BoardState& state);
 
+std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer);
+
 #endif // ENGINE_H

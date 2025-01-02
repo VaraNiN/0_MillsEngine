@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <iostream>
 #include <cstdlib>
+#include <algorithm> 
 
 
 std::bitset<50> generateKey(const BoardState& state) {
@@ -475,4 +476,42 @@ float evaluate(const BoardState& state) {
     }
 
     return score;
+}
+
+std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer) {   
+    if (depth == 0 || isTerminalNode(node) != 0) {
+        return {evaluate(node), node};    //if it is a leaf node, return eval
+    }
+
+    BoardState bestNode;
+
+    if (maximizingPlayer) {
+        float maxEval = -1e6;
+        std::vector<BoardState> children = getChildren(node);
+        for (const BoardState& child : children) {
+            auto [eval, _] = minimax(child, depth - 1, alpha, beta, false);
+            if (eval > maxEval) {
+                maxEval = eval;
+                bestNode = child;
+            }
+            alpha = std::max(alpha, eval);
+            if (beta <= alpha)
+                break; // Beta cut-off
+        }
+        return {maxEval, bestNode};
+    } else {
+        float minEval = 1e6;
+        std::vector<BoardState> children = getChildren(node);
+        for (const BoardState& child : children) {
+            auto [eval, _] = minimax(child, depth - 1, alpha, beta, true);
+            if (eval < minEval) {
+                minEval = eval;
+                bestNode = child;
+            }
+            beta = std::min(beta, eval);
+            if (beta <= alpha)
+                break; // Alpha cut-off
+        }
+        return {minEval, bestNode};
+    }
 }
