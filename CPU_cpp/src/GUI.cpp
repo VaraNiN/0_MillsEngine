@@ -84,7 +84,6 @@ int getVicinity(int x, int y, int offset, int radius) {
     for (const auto& [index, position] : vertices) {
         if ((position.x - radius <= x && x <= position.x + radius) &&
             (position.y - radius <= y && y <= position.y + radius)) {
-            // Explicitly state which index is being returned
             std::cout << "Returning index: " << index << std::endl;
             return index;
         }
@@ -215,7 +214,7 @@ std::vector<int> runMillsBoard(BoardState& state, int inputs) {
                         result.push_back(-3);
                         window.close();
                     } else {
-                        int vicinity = getVicinity(x, y, 0, 20); // Adjust offset and radius as needed
+                        int vicinity = getVicinity(x, y, 0, 20);
                         if (vicinity != -1 && result.size() < inputs) {
                             result.push_back(vicinity);
                             if (result.size() == inputs) {

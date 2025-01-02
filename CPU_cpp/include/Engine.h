@@ -11,12 +11,13 @@
 struct BoardState {
     std::bitset<24> blackPieces;
     std::bitset<24> whitePieces;
+    std::bitset<24> emptySpaces = std::bitset<24>().set();
     std::int_fast8_t moveNumber = 0;
     bool isTurnWhite = true;    // if false, it is the black player's turn
     bool placingPhase = true;   // if false, it is the moving phase or later
     bool isLateGameWhite = false;
     bool isLateGameBlack = false;
-    std::vector<std::unordered_set<int>> neighbors = {
+    inline static const std::vector<std::unordered_set<int>> neighbors = {
         {1, 9},          // 0
         {0, 2, 4},       // 1
         {1, 14},         // 2
@@ -68,7 +69,7 @@ struct BoardState {
         {19, 21, 23},    // 22
         {14, 22}         // 23
     };
-    std::vector<std::bitset<24>> possibleMills = {
+    inline static const std::vector<std::bitset<24>> possibleMills = {
         std::bitset<24>("000000000000000000000111"), // Mill 1: {0, 1, 2}
         std::bitset<24>("000000000000000000111000"), // Mill 2: {3, 4, 5}
         std::bitset<24>("000000000000000111000000"), // Mill 3: {6, 7, 8}
@@ -86,7 +87,7 @@ struct BoardState {
         std::bitset<24>("000100000010000000100000"), // Mill 15: {5, 13, 20}
         std::bitset<24>("100000000100000000000100"), // Mill 16: {2, 14, 23}
     };
-    std::vector<std::bitset<24>> possibleDoubleMills = {
+    inline static const std::vector<std::bitset<24>> possibleDoubleMills = {
         std::bitset<24>("000000000000000000111101"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000000101111"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000111101000"), // Mill 2 + Mill 3
@@ -104,7 +105,7 @@ struct BoardState {
         std::bitset<24>("100100000100000000100100"), // Mill 15 + Mill 16
         std::bitset<24>("100100000010000000100100"), // Mill 15 + Mill 16
     };
-    std::vector<std::bitset<24>> doubleMillBlockers = {
+    inline static const std::vector<std::bitset<24>> doubleMillBlockers = {
         std::bitset<24>("000000000000000000000010"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000000010000"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000000010000"), // Mill 2 + Mill 3
@@ -124,7 +125,7 @@ struct BoardState {
     };
 };
 
-std::string generateKey(const BoardState& state);
+std::bitset<50> generateKey(const BoardState& state);
 
 class History {
 public:
@@ -137,6 +138,8 @@ public:
 private:
     std::vector<BoardState> history;
 };
+
+void checkValidity(const BoardState& state);
 
 void checkPhase(BoardState& state);
 

@@ -12,10 +12,28 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    inputAdd(state, history);
-    inputAdd(state, history);
-    inputMove(state, history);
-    inputRemove(state, history);
+    while (true) {
+        inputAdd(state, history);
+        checkValidity(state);
+        BoardState teststate;
+        teststate.whitePieces = state.emptySpaces;
+        show_position(teststate);
+        inputAdd(state, history);
+        checkValidity(state);
+        teststate = BoardState();
+        teststate.whitePieces = state.emptySpaces;
+        show_position(teststate);
+        inputMove(state, history);
+        checkValidity(state);
+        teststate = BoardState();
+        teststate.whitePieces = state.emptySpaces;
+        show_position(teststate);
+        inputRemove(state, history);
+        checkValidity(state);
+        teststate = BoardState();
+        teststate.whitePieces = state.emptySpaces;
+        show_position(teststate);
+    }
 
     return 0;
 }

@@ -31,14 +31,16 @@ void inputAdd(BoardState& state, History& history) {
         }
     } else if (position[0] == -3) {
         exit(0);
-    } else if (state.whitePieces[position[0]] != 0 || state.blackPieces[position[0]] != 0) {
+    } else if (state.whitePieces[position[0]] || state.blackPieces[position[0]]) {
         std::cout << "There is already a piece there!" << std::endl;
         inputAdd(state, history);
     } else {
         if (state.isTurnWhite) {
             state.whitePieces.set(position[0]);
+            state.emptySpaces.reset(position[0]);
         } else {
             state.blackPieces.set(position[0]);
+            state.emptySpaces.reset(position[0]);
         }
         state.isTurnWhite = !state.isTurnWhite;
         state.moveNumber ++;
@@ -63,17 +65,19 @@ void inputRemove(BoardState& state, History& history) {
         std::cout << "Cannot go back now, please take a stone first!" << std::endl;
     } else if (position[0] == -3) {
         exit(0);
-    } else if (state.isTurnWhite & state.blackPieces[position[0]] != 1) {
+    } else if (state.isTurnWhite & !state.blackPieces[position[0]]) {
         std::cout << "Please choose a black piece to remove!" << std::endl;
         inputRemove(state, history);
-    } else if (!state.isTurnWhite & state.whitePieces[position[0]] != 1) {
+    } else if (!state.isTurnWhite & !state.whitePieces[position[0]]) {
         std::cout << "Please choose a white piece to remove!" << std::endl;
         inputRemove(state, history);
     } else {
         if (state.isTurnWhite) {
             state.blackPieces.reset(position[0]);
+            state.emptySpaces.set(position[0]);
         } else {
             state.whitePieces.reset(position[0]);
+            state.emptySpaces.set(position[0]);
         }
         state.isTurnWhite = !state.isTurnWhite;
 
@@ -111,19 +115,23 @@ void inputMove(BoardState& state, History& history) {
         }
     } else if (position[0] == -3) {
         exit(0);
-    } else if (state.whitePieces[position[1]] != 0 || state.blackPieces[position[1]] != 0) {
+    } else if (state.whitePieces[position[1]] || state.blackPieces[position[1]]) {
         std::cout << "There is already a piece at the target location!" << std::endl;
         inputMove(state, history); 
-    } else if ((state.isTurnWhite & state.whitePieces[position[0]] != 1) || (!state.isTurnWhite & state.blackPieces[position[0]] != 1)){
+    } else if ((state.isTurnWhite & !state.whitePieces[position[0]]) || (!state.isTurnWhite & !state.blackPieces[position[0]])){
         std::cout << "There is none of your pieces at the origin!" << std::endl;
         inputMove(state, history); 
     } else {
         if (state.isTurnWhite) {
             state.whitePieces.reset(position[0]);
             state.whitePieces.set(position[1]);
+            state.emptySpaces.set(position[0]);
+            state.emptySpaces.reset(position[1]);
         } else {
             state.blackPieces.reset(position[0]);
             state.blackPieces.set(position[1]);
+            state.emptySpaces.set(position[0]);
+            state.emptySpaces.reset(position[1]);
         }
         state.isTurnWhite = !state.isTurnWhite;
         state.moveNumber ++;
