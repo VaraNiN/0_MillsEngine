@@ -24,4 +24,8 @@ void print(const T& message) {
 
 void checkFunctionEmptyNeighbors(const BoardState state, int cell);
 
+std::bitset<24> generateRandomBitset();
+
+void timeStuff(BoardState state, int its = 1e6);
+
 #endif // UTILITIES_H

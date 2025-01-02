@@ -13,21 +13,10 @@ std::bitset<50> generateKey(const BoardState& state) {
         std::bitset<50> key;
         key[0] = state.isTurnWhite;
         key[1] = state.placingPhase;
-        std::bitset<50> whitePiecesExtended(state.whitePieces.to_ulong());
-        key |= (whitePiecesExtended << 2);
-        std::bitset<50> blackPiecesExtended(state.blackPieces.to_ulong());
-        key |= (blackPiecesExtended << 26);
-        return key;
-}
-
-std::bitset<50> generateKey2(const BoardState& state) {
-        std::bitset<50> key;
-        key[0] = state.isTurnWhite;
-        key[1] = state.placingPhase;
-        for (size_t i = 0; i < 24; ++i) {
-            key[i + 2] = state.whitePieces[i];
-            key[i + 26] = state.blackPieces[i];
-        }
+        std::bitset<50> piecesExtended(state.whitePieces.to_ulong());
+        key |= (piecesExtended << 2);
+        piecesExtended = std::bitset<50>(state.blackPieces.to_ulong());
+        key |= (piecesExtended << 26);
         return key;
 }
 
@@ -82,9 +71,25 @@ void checkPhase(BoardState& state) {
     }
 }
 
-std::vector<BoardState> getChildren(BoardState state) {
+std::vector<BoardState> getChildren(const BoardState& state) {
     std::vector<BoardState> children;
+    BoardState dummyState = state;
+
     if (state.placingPhase) {
-        return children;
+        for (int i = 0; i < 24; i++) {
+            if (state.emptySpaces[i]) {
+                if (state.isTurnWhite) {
+                    dummyState.whitePieces.set(i);
+                    children.push_back(dummyState);
+                    dummyState = state;
+                } else {
+                    dummyState.blackPieces.set(i);
+                    children.push_back(dummyState);
+                    dummyState = state;
+                }
+            }
+        }
     }
+
+    return children;
 }

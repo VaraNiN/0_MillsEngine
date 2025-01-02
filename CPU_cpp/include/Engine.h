@@ -17,7 +17,7 @@ struct BoardState {
     bool placingPhase = true;   // if false, it is the moving phase or later
     bool isLateGameWhite = false;
     bool isLateGameBlack = false;
-    inline static const std::vector<std::unordered_set<int>> neighbors = {
+    std::vector<std::unordered_set<int>> emptyNeighbors = {
         {1, 9},          // 0
         {0, 2, 4},       // 1
         {1, 14},         // 2
@@ -43,7 +43,7 @@ struct BoardState {
         {19, 21, 23},    // 22
         {14, 22}         // 23
     };
-    std::vector<std::unordered_set<int>> emptyNeighbors = {
+    inline static const std::vector<std::unordered_set<int>> neighbors = {
         {1, 9},          // 0
         {0, 2, 4},       // 1
         {1, 14},         // 2
@@ -127,8 +127,6 @@ struct BoardState {
 
 std::bitset<50> generateKey(const BoardState& state);
 
-std::bitset<50> generateKey2(const BoardState& state);
-
 class History {
 public:
     void saveState(const BoardState& state);
@@ -144,5 +142,7 @@ private:
 void checkValidity(const BoardState& state);
 
 void checkPhase(BoardState& state);
+
+std::vector<BoardState> getChildren(const BoardState& state);
 
 #endif // ENGINE_H
