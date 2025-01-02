@@ -91,11 +91,10 @@ int getVicinity(int x, int y, int offset, int radius) {
     }
     return -1;
 }
-
 // Function to create the Mills board
 void createMillsBoard(sf::RenderWindow& window, const BoardState& state, int width, int height, int offset, int radius) {
-    // Set the background color to white
-    window.clear(sf::Color::White);
+    // Set the background color to light brown
+    window.clear(sf::Color(210, 180, 140)); // Light brown
 
     sf::RectangleShape outerSquare(sf::Vector2f(static_cast<float>(width - 80), static_cast<float>(height - 80)));
     outerSquare.setPosition(40.0f, 40.0f - static_cast<float>(offset));
@@ -146,12 +145,12 @@ void createMillsBoard(sf::RenderWindow& window, const BoardState& state, int wid
     for (const auto& [index, position] : vertices) {
         sf::CircleShape circle(static_cast<float>(radius));
         circle.setPosition(position.x - static_cast<float>(radius), position.y - static_cast<float>(radius));
-        if (state.blackPieces.test(index)) {
-            circle.setFillColor(sf::Color::Blue);
-        } else if (state.whitePieces.test(index)) {
-            circle.setFillColor(sf::Color::Red);
-        } else {
+        if (state.whitePieces.test(index)) {
+            circle.setFillColor(sf::Color::White);
+        } else if (state.blackPieces.test(index)) {
             circle.setFillColor(sf::Color::Black);
+        } else {
+            circle.setFillColor(sf::Color(139, 69, 19)); // Dark brown
         }
         window.draw(circle);
     }
@@ -228,7 +227,7 @@ std::vector<int> runMillsBoard(BoardState& state, int inputs) {
             }
         }
 
-        window.clear(sf::Color::White); // Set background color to white
+        window.clear(sf::Color(210, 180, 140)); // Set background color to light brown
         createMillsBoard(window, state, 600, 600, 0, 20); // Adjust width, height, offset, and radius as needed
         window.draw(button1);
         window.draw(button2);

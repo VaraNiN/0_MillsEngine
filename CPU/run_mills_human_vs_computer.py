@@ -17,7 +17,7 @@ from datetime import datetime
 
 ### Variables
 
-PLAYER_COLOUR = -1
+PLAYER_COLOUR = 1
 CPU_THINK_TIME_EARLY = 3     #[s] How long the computer is allowed to think in the early game
 CPU_THINK_TIME_MID = 8     #[s] How long the computer is allowed to think in the mid and late game
 

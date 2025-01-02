@@ -140,10 +140,4 @@ private:
 
 void checkPhase(BoardState& state);
 
-void inputAdd(BoardState& state, History& history);
-
-void inputRemove(BoardState& state, History& history);
-
-void inputMove(BoardState& state, History& history);
-
 #endif // ENGINE_H
