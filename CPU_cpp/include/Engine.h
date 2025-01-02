@@ -129,6 +129,28 @@ struct BoardState {
         std::bitset<24>("000000000010000000000000"), // Mill 15 + Mill 16
         std::bitset<24>("000000000100000000000000"), // Mill 15 + Mill 16
     };
+    struct Weights {
+        float corner;
+        float three_cross;
+        float four_cross;
+        float open_mill;
+        float closed_mill;
+        float double_mill;
+        float legal_moves;
+
+        // Default constructor
+        Weights()
+            : corner(1.0), three_cross(1.1), four_cross(1.2), open_mill(0.3),
+              closed_mill(0.2), double_mill(1.5), legal_moves(0.1) {}
+    };
+
+    inline static const Weights weights;
+};
+
+
+struct Colours {
+    int white = 0;
+    int black = 0;
 };
 
 std::bitset<50> generateKey(const BoardState& state);
@@ -151,8 +173,20 @@ void checkPhase(BoardState& state);
 
 bool checkMill(const BoardState& state, int movedPieceIndex);
 
+Colours countMill(const BoardState& state);
+
+Colours countOpenMill(const BoardState& state);
+
+Colours countDoubleMill(const BoardState& state);
+
 std::vector<BoardState> removePieces(const BoardState& state);
 
 std::vector<BoardState> getChildren(const BoardState& state);
+
+Colours getPossibleMoveNumbers(const BoardState& state);
+
+Colours getPossibleMidGameMoveNumbers(const BoardState& state);
+
+float evaluate(const BoardState& state);
 
 #endif // ENGINE_H

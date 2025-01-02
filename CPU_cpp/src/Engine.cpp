@@ -102,6 +102,54 @@ bool checkMill(const BoardState& state, int movedPieceIndex) {
     }
 }
 
+// for a given board state count the number of closed mills for both colours
+Colours countMill(const BoardState& state) {
+    Colours result;
+
+    for (std::bitset<24> mill : state.possibleMills) {
+        if ((state.whitePieces & mill).count() == 3) {
+            result.white ++;
+        }
+        if ((state.blackPieces & mill).count() == 3) {
+            result.black ++;
+        }
+    }
+
+    return result;
+}
+
+// for a given board state count the number of open mills for both colours
+Colours countOpenMill(const BoardState& state) {
+    Colours result;
+
+    for (std::bitset<24> mill : state.possibleMills) {
+        if ((state.whitePieces & mill).count() == 2 & !(state.blackPieces & mill).any()) {
+            result.white ++;
+        }
+        if ((state.blackPieces & mill).count() == 2 & !(state.whitePieces & mill).any()) {
+            result.black ++;
+        }
+    }
+
+    return result;
+}
+
+// for a given board state count the number of double mills for both colours which are not blocked
+Colours countDoubleMill(const BoardState& state) {
+    Colours result;
+
+    for (int i = 0; i < 16; i++)  {
+        if ((state.whitePieces & state.possibleDoubleMills[i]).count() == 5 & !(state.blackPieces & state.doubleMillBlockers[i]).any()) {
+            result.white ++;
+        }
+        if ((state.blackPieces & state.possibleDoubleMills[i]).count() == 5 & !(state.whitePieces & state.doubleMillBlockers[i]).any()) {
+            result.white ++;
+        }
+    }
+
+    return result;
+}
+
 // returns vector with all options for pieces of the non current colour being removed
 std::vector<BoardState> removePieces(const BoardState& state) {
     std::vector<BoardState> children;
@@ -291,4 +339,136 @@ std::vector<BoardState> getChildren(const BoardState& state) {
     }
 
     return children;
+}
+
+Colours getPossibleMoveNumbers(const BoardState& state) {
+    Colours result;
+    result.white = 0;
+    result.black = 0;
+    int numberEmptySpaces = state.emptySpaces.count();
+    
+    if (state.isPlacingPhase) {
+        result.white = numberEmptySpaces;
+        result.black = numberEmptySpaces;
+    } else {
+        if (state.isFlyingPhaseWhite) {
+            result.white = numberEmptySpaces;
+        } else {
+            for (int i = 0; i < 24; i++) { 
+                if (state.whitePieces[i]) {
+                    result.white += state.emptyNeighbors[i].size();
+                }
+            }
+        }
+
+        if (state.isFlyingPhaseBlack) {
+            result.black = numberEmptySpaces;
+        } else {
+            for (int i = 0; i < 24; i++) { 
+                if (state.blackPieces[i]) {
+                    result.black += state.emptyNeighbors[i].size();
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+Colours getPossibleMidGameMoveNumbers(const BoardState& state) {
+    Colours result;
+    
+    for (int i = 0; i < 24; i++) { 
+        if (state.whitePieces[i]) {
+            result.white += state.emptyNeighbors[i].size();
+        }
+        if (state.blackPieces[i]) {
+            result.black += state.emptyNeighbors[i].size();
+        }
+    }
+    
+    return result;
+}
+
+// Returns +1 if white has won, -1 if black has won and 0 if it is undecided
+int isTerminalNode(const BoardState& state) {
+    if (!state.isPlacingPhase) { // Winning during the placing phase is impossible
+        // Win because of piece count
+        if (state.blackPieces.count() < 3) {
+            return 1;
+        } else if (state.whitePieces.count() < 3) {
+            return -1;
+        }
+
+        // Win because no more legal moves
+        Colours availableMoves = getPossibleMoveNumbers(state);
+
+        if (availableMoves.black == 0 & !state.isTurnWhite) { 
+            return 1;
+        } else if (availableMoves.white == 0 & state.isTurnWhite) { 
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+//Evaluates the position
+//TODO: Change weightings based on the current phase of the game
+//TODO: Change weightings based on which player's turn it is?
+//TODO: Train these weightings with AI
+float evaluate(const BoardState& state) {
+    // Check if a playes has won
+    int isTerminal = isTerminalNode(state);
+    if (isTerminal != 0) {
+        return 9001. * isTerminal;
+    }
+
+    float score = 0.;
+
+    // Modify score based on material and position
+    const int corners[] = {0, 2, 3, 5, 6, 8, 15, 17, 18, 20, 21, 23};
+    const int threeCrossings[] = {1, 7, 9, 11, 12, 14, 16, 22};
+    const int fourCrossings[] = {4, 10, 13, 19};
+
+    for (int pos : corners) {
+        if (state.whitePieces[pos]) {
+            score += state.weights.corner;
+        } else if (state.blackPieces[pos]) {
+            score -= state.weights.corner;
+        }
+    }
+
+    for (int pos : threeCrossings) {
+        if (state.whitePieces[pos]) {
+            score += state.weights.three_cross;
+        } else if (state.blackPieces[pos]) {
+            score -= state.weights.three_cross;
+        }
+    }
+
+    for (int pos : fourCrossings) {
+        if (state.whitePieces[pos]) {
+            score += state.weights.four_cross;
+        } else if (state.blackPieces[pos]) {
+            score -= state.weights.four_cross;
+        }
+    }
+
+    // Modify score based on (possible) mills in the position
+    Colours millNumbersClosed = countMill(state);
+    score += (millNumbersClosed.white - millNumbersClosed.black) * state.weights.closed_mill;
+    Colours millNumbersOpen = countOpenMill(state);
+    score += (millNumbersOpen.white - millNumbersOpen.black) * state.weights.open_mill;
+    Colours millNumbersDouble = countDoubleMill(state);
+    score += (millNumbersDouble.white - millNumbersDouble.black) * state.weights.double_mill;
+
+    // Modify score based on mobility of the pieces (not important if any player has flying phase)
+    // Is important for the future game however if it's still early game
+    if (!state.isFlyingPhaseWhite & !state.isFlyingPhaseBlack) {
+        Colours possibleMoves = getPossibleMidGameMoveNumbers(state);
+        score += (possibleMoves.white - possibleMoves.black) * state.weights.legal_moves;
+    }
+
+    return score;
 }

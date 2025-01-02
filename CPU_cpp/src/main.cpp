@@ -10,36 +10,13 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    std::vector<BoardState> children;
+    float eval = evaluate(state);
 
-    inputAdd(state, history);
-    inputAdd(state, history);
-    inputAdd(state, history);
-    inputAdd(state, history);
-    inputAdd(state, history);
-    inputAdd(state, history);
-    state.moveNumber = 20;
-    checkPhase(state);
-    children = getChildren(state);
-
-    for (BoardState child : children) {
-        show_position(child);
-        print(child);
+    while (true) {
+        eval = evaluate(state);
+        print(eval);
+        inputAdd(state, history);
     }
-    show_position(state);
-    print(state);
-
-    inputAdd(state, history);
-    inputAdd(state, history);
-    checkPhase(state);
-    children = getChildren(state);
-    
-    for (BoardState child : children) {
-        show_position(child);
-        print(child);
-    }
-    show_position(state);
-    print(state);
 
 
     //state.whitePieces = generateRandomBitset();
