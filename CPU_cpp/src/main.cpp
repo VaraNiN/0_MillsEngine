@@ -9,12 +9,10 @@ int main() {
 
     int i = 1;
     while (true) {
-        print(generateKey(state));
         inputAdd(state, history);
-        if (i % 3 == 0) {
-            inputRemove(state, history);
-        }
-        i++;
+        inputAdd(state, history);
+        inputMove(state, history);
+        inputMove(state, history);
     }
 
     return 0;
