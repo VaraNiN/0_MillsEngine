@@ -25,9 +25,9 @@ void show_position(const BoardState& state, bool replace_symbols) {
     std::vector<std::string> input(24);
     for (size_t i = 0; i < 24; ++i) {
         if (replace_symbols) {
-            if (state.blackPieces[i]) {
+            if (state.whitePieces[i]) {
                 input[i] = "X"; // White piece
-            } else if (state.whitePieces[i]) {
+            } else if (state.blackPieces[i]) {
                 input[i] = "O"; // White piece
             } else {
                 input[i] = " ";

@@ -7,12 +7,9 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    int i = 1;
-    while (true) {
-        inputAdd(state, history);
-        inputAdd(state, history);
-        inputMove(state, history);
-        inputMove(state, history);
+    for (int i = 0; i < 16; i++) {
+        state.whitePieces = state.possibleMills[i];
+        show_position(state);
     }
 
     return 0;
