@@ -20,6 +20,39 @@ std::bitset<50> generateKey(const BoardState& state) {
         return key;
 }
 
+std::bitset<50> generateKey2(const BoardState& state) {
+        std::bitset<50> key;
+        key[0] = state.isTurnWhite;
+        key[1] = state.placingPhase;
+        for (size_t i = 0; i < 24; ++i) {
+            key[i + 2] = state.whitePieces[i];
+            key[i + 26] = state.blackPieces[i];
+        }
+        return key;
+}
+
+std::bitset<50> generateKey3(const BoardState state) {
+        std::bitset<50> key;
+        key[0] = state.isTurnWhite;
+        key[1] = state.placingPhase;
+        std::bitset<50> whitePiecesExtended(state.whitePieces.to_ulong());
+        key |= (whitePiecesExtended << 2);
+        std::bitset<50> blackPiecesExtended(state.blackPieces.to_ulong());
+        key |= (blackPiecesExtended << 26);
+        return key;
+}
+
+std::bitset<50> generateKey4(const BoardState state) {
+        std::bitset<50> key;
+        key[0] = state.isTurnWhite;
+        key[1] = state.placingPhase;
+        for (size_t i = 0; i < 24; ++i) {
+            key[i + 2] = state.whitePieces[i];
+            key[i + 26] = state.blackPieces[i];
+        }
+        return key;
+}
+
 void History::saveState(const BoardState& state) {
     history.push_back(state);
 }
