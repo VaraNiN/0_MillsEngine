@@ -129,10 +129,6 @@ std::bitset<50> generateKey(const BoardState& state);
 
 std::bitset<50> generateKey2(const BoardState& state);
 
-std::bitset<50> generateKey3(const BoardState state);
-
-std::bitset<50> generateKey4(const BoardState state);
-
 class History {
 public:
     void saveState(const BoardState& state);

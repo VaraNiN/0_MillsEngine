@@ -24,7 +24,7 @@ void timeStuff(BoardState state, int its = 1e6) {
 
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < its; i++){
-        key = generateKey(state);
+        key = generateKey2(state);
     }
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
@@ -33,25 +33,7 @@ void timeStuff(BoardState state, int its = 1e6) {
 
     start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < its; i++){
-        key = generateKey2(state);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    duration = end - start;
-    std::cout << "Operations took: " << duration.count() << " seconds\n";
-    std::cout << "Average: " << 1e6 * duration.count() / its << " µs\n\n";
-
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < its; i++){
-        key = generateKey3(state);
-    }
-    end = std::chrono::high_resolution_clock::now();
-    duration = end - start;
-    std::cout << "Operations took: " << duration.count() << " seconds\n";
-    std::cout << "Average: " << 1e6 * duration.count() / its << " µs\n\n";
-
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < its; i++){
-        key = generateKey4(state);
+        key = generateKey(state);
     }
     end = std::chrono::high_resolution_clock::now();
     duration = end - start;
