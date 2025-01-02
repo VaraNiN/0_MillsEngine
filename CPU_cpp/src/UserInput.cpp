@@ -37,11 +37,10 @@ void inputAdd(BoardState& state, History& history) {
     } else {
         if (state.isTurnWhite) {
             state.whitePieces.set(position[0]);
-            state.emptySpaces.reset(position[0]);
         } else {
             state.blackPieces.set(position[0]);
-            state.emptySpaces.reset(position[0]);
         }
+        state.emptySpaces.reset(position[0]);
         state.isTurnWhite = !state.isTurnWhite;
         state.moveNumber ++;
         

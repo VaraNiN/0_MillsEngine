@@ -5,19 +5,15 @@
 #include "Engine.h"
 
 std::ostream& operator<<(std::ostream& os, const BoardState& boardState) {
-    os << "Black Pieces: " << boardState.blackPieces << "\n";
     os << "White Pieces: " << boardState.whitePieces << "\n";
+    os << "Black Pieces: " << boardState.blackPieces << "\n";
+    os << "Empty Spaces: " << boardState.emptySpaces << "\n";
     os << "Move Number: " << static_cast<int>(boardState.moveNumber) << "\n";
-    os << "Is Turn White: " << (boardState.isTurnWhite ? "Yes" : "No") << "\n";
-    os << "Placing Phase: " << (boardState.placingPhase ? "Yes" : "No") << "\n";
-    os << "Is Late Game White: " << (boardState.isLateGameWhite ? "Yes" : "No") << "\n";
-    os << "Is Late Game Black: " << (boardState.isLateGameBlack ? "Yes" : "No") << "\n";
+    os << "Is it white's turn: " << (boardState.isTurnWhite ? "Yes" : "No") << "\n";
+    os << "Placing Phase: " << (boardState.isPlacingPhase ? "Yes" : "No") << "\n";
+    os << "Flying phase for White: " << (boardState.isFlyingPhaseWhite ? "Yes" : "No") << "\n";
+    os << "Flying phase for Black: " << (boardState.isFlyingPhaseBlack ? "Yes" : "No") << "\n";
     return os;
-}
-
-template <typename T>
-void print(const T& message) {
-    std::cout << message << std::endl;
 }
 
 // Other functions

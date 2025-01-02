@@ -13,11 +13,33 @@ int main() {
     std::vector<BoardState> children;
 
     inputAdd(state, history);
+    inputAdd(state, history);
+    inputAdd(state, history);
+    inputAdd(state, history);
+    inputAdd(state, history);
+    inputAdd(state, history);
+    state.moveNumber = 20;
+    checkPhase(state);
     children = getChildren(state);
 
     for (BoardState child : children) {
         show_position(child);
+        print(child);
     }
+    show_position(state);
+    print(state);
+
+    inputAdd(state, history);
+    inputAdd(state, history);
+    checkPhase(state);
+    children = getChildren(state);
+    
+    for (BoardState child : children) {
+        show_position(child);
+        print(child);
+    }
+    show_position(state);
+    print(state);
 
 
     //state.whitePieces = generateRandomBitset();

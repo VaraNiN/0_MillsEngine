@@ -7,16 +7,22 @@
 #include <vector>
 #include <cstdint>
 #include <unordered_set>
+#include <iostream>
+
+template <typename T>
+void print(const T& message) {
+    std::cout << message << std::endl;
+}
 
 struct BoardState {
-    std::bitset<24> blackPieces;
     std::bitset<24> whitePieces;
+    std::bitset<24> blackPieces;
     std::bitset<24> emptySpaces = std::bitset<24>().set();
     std::int_fast8_t moveNumber = 0;
     bool isTurnWhite = true;    // if false, it is the black player's turn
-    bool placingPhase = true;   // if false, it is the moving phase or later
-    bool isLateGameWhite = false;
-    bool isLateGameBlack = false;
+    bool isPlacingPhase = true;   // if false, it is the moving phase or later
+    bool isFlyingPhaseWhite = false;
+    bool isFlyingPhaseBlack = false;
     std::vector<std::unordered_set<int>> emptyNeighbors = {
         {1, 9},          // 0
         {0, 2, 4},       // 1
@@ -142,6 +148,10 @@ private:
 void checkValidity(const BoardState& state);
 
 void checkPhase(BoardState& state);
+
+bool checkMill(const BoardState& state, int movedPieceIndex);
+
+std::vector<BoardState> removePieces(const BoardState& state);
 
 std::vector<BoardState> getChildren(const BoardState& state);
 
