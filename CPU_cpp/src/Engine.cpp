@@ -84,7 +84,7 @@ bool checkMill(const BoardState& state, int movedPieceIndex) {
     int millCountBeforeMove = 0;
     for (const std::bitset<24>& mill : state.possibleMills) {
         if ((piecesToCheck & mill).count() == 3) {
-            millCountBeforeMove ++;
+            millCountBeforeMove++;
         }
     }
 
@@ -92,7 +92,7 @@ bool checkMill(const BoardState& state, int movedPieceIndex) {
     int millCountAfterMove = 0;
     for (const std::bitset<24>& mill : state.possibleMills) {
         if ((piecesToCheck & mill).count() == 3) {
-            millCountAfterMove ++;
+            millCountAfterMove++;
         }
     }
 
@@ -109,10 +109,10 @@ Colours countMill(const BoardState& state) {
 
     for (const std::bitset<24>& mill : state.possibleMills) {
         if ((state.whitePieces & mill).count() == 3) {
-            result.white ++;
+            result.white++;
         }
         if ((state.blackPieces & mill).count() == 3) {
-            result.black ++;
+            result.black++;
         }
     }
 
@@ -125,10 +125,10 @@ Colours countOpenMill(const BoardState& state) {
 
     for (const std::bitset<24>& mill : state.possibleMills) {
         if ((state.whitePieces & mill).count() == 2 & !(state.blackPieces & mill).any()) {
-            result.white ++;
+            result.white++;
         }
         if ((state.blackPieces & mill).count() == 2 & !(state.whitePieces & mill).any()) {
-            result.black ++;
+            result.black++;
         }
     }
 
@@ -141,10 +141,10 @@ Colours countDoubleMill(const BoardState& state) {
 
     for (int i = 0; i < 16; i++)  {
         if ((state.whitePieces & state.possibleDoubleMills[i]).count() == 5 & !(state.blackPieces & state.doubleMillBlockers[i]).any()) {
-            result.white ++;
+            result.white++;
         }
         if ((state.blackPieces & state.possibleDoubleMills[i]).count() == 5 & !(state.whitePieces & state.doubleMillBlockers[i]).any()) {
-            result.white ++;
+            result.white++;
         }
     }
 
@@ -193,7 +193,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.blackPieces.set(i);
                 }
                 dummyState.emptySpaces.reset(i);
-                dummyState.moveNumber ++;
+                dummyState.moveNumber++;
                 for (int neighbour : state.neighbors[i]) {
                     dummyState.emptyNeighbors[neighbour].erase(i);
                 }
@@ -220,7 +220,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         dummyState.whitePieces.set(j);
                         dummyState.emptySpaces.set(i);
                         dummyState.emptySpaces.reset(j);
-                        dummyState.moveNumber ++;
+                        dummyState.moveNumber++;
 
                         for (int neighbour : state.neighbors[i]) {
                             dummyState.emptyNeighbors[neighbour].insert(i);
@@ -253,7 +253,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         dummyState.blackPieces.set(j);
                         dummyState.emptySpaces.set(i);
                         dummyState.emptySpaces.reset(j);
-                        dummyState.moveNumber ++;
+                        dummyState.moveNumber++;
 
                         for (int neighbour : state.neighbors[i]) {
                             dummyState.emptyNeighbors[neighbour].insert(i);
@@ -285,7 +285,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.whitePieces.set(emptyNeighbor);
                     dummyState.emptySpaces.set(i);
                     dummyState.emptySpaces.reset(emptyNeighbor);
-                    dummyState.moveNumber ++;
+                    dummyState.moveNumber++;
                     for (int neighbour : state.neighbors[i]) {
                         dummyState.emptyNeighbors[neighbour].insert(i);
                     }       
@@ -315,7 +315,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.blackPieces.set(emptyNeighbor);
                     dummyState.emptySpaces.set(i);
                     dummyState.emptySpaces.reset(emptyNeighbor);
-                    dummyState.moveNumber ++;
+                    dummyState.moveNumber++;
                     for (int neighbour : state.neighbors[i]) {
                         dummyState.emptyNeighbors[neighbour].insert(i);
                     }       
@@ -478,8 +478,13 @@ float evaluate(const BoardState& state) {
     return score;
 }
 
+int callCount = 0;
+int leaveCount = 0;
+
 std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer) {   
+    callCount++;
     if (depth == 0 || isTerminalNode(node) != 0) {
+        leaveCount++;
         return {evaluate(node), node};    //if it is a leaf node, return eval
     }
 

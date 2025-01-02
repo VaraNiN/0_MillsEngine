@@ -84,7 +84,7 @@ int getVicinity(int x, int y, int offset, int radius) {
     for (const auto& [index, position] : vertices) {
         if ((position.x - radius <= x && x <= position.x + radius) &&
             (position.y - radius <= y && y <= position.y + radius)) {
-            std::cout << "Returning index: " << index << std::endl;
+            //std::cout << "Returning index: " << index << std::endl;
             return index;
         }
     }

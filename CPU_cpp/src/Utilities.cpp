@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "GUI.h"
 #include <iostream>
 #include <random>
 #include <chrono>
@@ -31,26 +32,29 @@ void timeStuff(const BoardState& state, int its, int pos_every) {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
     BoardState dummyState = state;
-    if (!dummyState.whitePieces.any() & !dummyState.blackPieces.any()) {
-        dummyState.whitePieces = generateRandomBitset();
-        dummyState.blackPieces = generateRandomBitset();
+    if (!state.whitePieces.any() & !state.blackPieces.any()) {
+        auto dummy1 = generateRandomBitset();
+        auto dummy2 = generateRandomBitset();
+        dummyState.whitePieces = dummy1 & dummy2;
+        dummyState.blackPieces = ~(dummy1 | dummy2);
     }
-
-    float eval;
 
     start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < its; i++){
         if (i % pos_every == 0) {
             end = std::chrono::high_resolution_clock::now();
             duration += end - start;
-            if (!dummyState.whitePieces.any() & !dummyState.blackPieces.any()) {
-                dummyState.whitePieces = generateRandomBitset();
-                dummyState.blackPieces = generateRandomBitset();
+            if (!state.whitePieces.any() & !state.blackPieces.any()) {
+                auto dummy1 = generateRandomBitset();
+                auto dummy2 = generateRandomBitset();
+                dummyState.whitePieces = dummy1 & dummy2;
+                dummyState.blackPieces = ~(dummy1 | dummy2);
+                dummyState.isPlacingPhase ^= true;
             }
             start = std::chrono::high_resolution_clock::now();
         }
         // enter Function here
-        eval = evaluate(dummyState);
+        auto dummy = getChildren(dummyState);
     }
     end = std::chrono::high_resolution_clock::now();
     duration += end - start;
