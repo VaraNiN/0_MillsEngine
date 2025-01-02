@@ -86,6 +86,42 @@ struct BoardState {
         std::bitset<24>("000100000010000000100000"), // Mill 15: {5, 13, 20}
         std::bitset<24>("100000000100000000000100"), // Mill 16: {2, 14, 23}
     };
+    std::vector<std::bitset<24>> possibleDoubleMills = {
+        std::bitset<24>("000000000000000000111101"), // Mill 1 + Mill 2
+        std::bitset<24>("000000000000000000101111"), // Mill 1 + Mill 2
+        std::bitset<24>("000000000000000111101000"), // Mill 2 + Mill 3
+        std::bitset<24>("000000000000000101111000"), // Mill 2 + Mill 3
+        std::bitset<24>("000111101000000000000000"), // Mill 6 + Mill 7
+        std::bitset<24>("000101111000000000000000"), // Mill 6 + Mill 7
+        std::bitset<24>("111101000000000000000000"), // Mill 7 + Mill 8
+        std::bitset<24>("101111000000000000000000"), // Mill 7 + Mill 8
+        std::bitset<24>("001001000000010000001001"), // Mill 9 + Mill 10
+        std::bitset<24>("001001000000001000001001"), // Mill 9 + Mill 10
+        std::bitset<24>("000001001000100001001000"), // Mill 10 + Mill 11
+        std::bitset<24>("000001001000010001001000"), // Mill 10 + Mill 11
+        std::bitset<24>("000100100010000100100000"), // Mill 14 + Mill 15
+        std::bitset<24>("000100100001000100100000"), // Mill 14 + Mill 15
+        std::bitset<24>("100100000100000000100100"), // Mill 15 + Mill 16
+        std::bitset<24>("100100000010000000100100"), // Mill 15 + Mill 16
+    };
+    std::vector<std::bitset<24>> doubleMillBlockers = {
+        std::bitset<24>("000000000000000000000010"), // Mill 1 + Mill 2
+        std::bitset<24>("000000000000000000010000"), // Mill 1 + Mill 2
+        std::bitset<24>("000000000000000000010000"), // Mill 2 + Mill 3
+        std::bitset<24>("000000000000000010000000"), // Mill 2 + Mill 3
+        std::bitset<24>("000000010000000000000000"), // Mill 6 + Mill 7
+        std::bitset<24>("000010000000000000000000"), // Mill 6 + Mill 7
+        std::bitset<24>("000010000000000000000000"), // Mill 7 + Mill 8
+        std::bitset<24>("010000000000000000000000"), // Mill 7 + Mill 8
+        std::bitset<24>("000000000000001000000000"), // Mill 9 + Mill 10
+        std::bitset<24>("000000000000010000000000"), // Mill 9 + Mill 10
+        std::bitset<24>("000000000000010000000000"), // Mill 10 + Mill 11
+        std::bitset<24>("000000000000100000000000"), // Mill 10 + Mill 11
+        std::bitset<24>("000000000001000000000000"), // Mill 14 + Mill 15
+        std::bitset<24>("000000000010000000000000"), // Mill 14 + Mill 15
+        std::bitset<24>("000000000010000000000000"), // Mill 15 + Mill 16
+        std::bitset<24>("000000000100000000000000"), // Mill 15 + Mill 16
+    };
 };
 
 std::string generateKey(const BoardState& state);
