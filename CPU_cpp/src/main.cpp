@@ -29,31 +29,46 @@ int main() {
         show_position(state);
     }
 
+
     // Timing bitwise AND operation
+    int its = 1e6;
     auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < its; i++){
+        for (std::bitset<24> possibleMill : state.possibleMills) {
+            bool isMill = (state.whitePieces & possibleMill).count() == 3;
+            //print(isMill);
+        }
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Average check if a mill occurred: " << 1e9 * duration.count()/its << " ns\n";
+
+
+    // Timing bitwise AND operation
+    start = std::chrono::high_resolution_clock::now();
     for (int j = 0; j < 16; j++){
-        for (int i = 0; i < 1e6; i++){
+        for (int i = 0; i < its; i++){
             //std::bitset<24> result = generateRandomBitset() & state.doubleMillBlockers[j];
             std::bitset<24> result = state.whitePieces & state.doubleMillBlockers[j];
             bool isNonZero = result.any();
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
-    std::cout << "Bitwise AND operation took: " << duration.count() << " seconds\n";
+    end = std::chrono::high_resolution_clock::now();
+    duration = end - start;
+    std::cout << "Average bitwise AND operation took: " << 1e9 * duration.count()/(16*its) << " ns\n";
 
     // Timing specific entry lookup
     start = std::chrono::high_resolution_clock::now();
     for (int j = 0; j < 16; j++){
-        for (int i = 0; i < 1e6; i++){
+        for (int i = 0; i < its; i++){
             //std::bitset<24> bitset = generateRandomBitset();
             //bool specificEntry = bitset[5];
-            bool specificEntry = state.whitePieces[5];
+            bool specificEntry = state.whitePieces[j];
         }
     }
     end = std::chrono::high_resolution_clock::now();
     duration = end - start;
-    std::cout << "Specific entry lookup took: " << duration.count() << " seconds\n";
+    std::cout << "Specific entry lookup took: " << 1e9 * duration.count()/(16*its) << " ns\n";
 
     return 0;
 }
