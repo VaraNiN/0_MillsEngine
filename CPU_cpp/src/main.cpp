@@ -30,7 +30,7 @@ int main() {
     }
 
 
-    // Timing bitwise AND operation
+    // Timing mill check
     int its = 1e6;
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < its; i++){
@@ -42,6 +42,16 @@ int main() {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
     std::cout << "Average check if a mill occurred: " << 1e9 * duration.count()/its << " ns\n";
+
+    // Timing piece count
+    start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < its; i++){
+        int white = state.whitePieces.count();
+        int black = state.blackPieces.count();
+    }
+    end = std::chrono::high_resolution_clock::now();
+    duration = end - start;
+    std::cout << "Average piece count took: " << 1e9 * duration.count()/(16*its) << " ns\n";
 
 
     // Timing bitwise AND operation
