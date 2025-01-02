@@ -48,7 +48,7 @@ void History::clearHistory() {
     history.clear();
 }
 
-// Checks which game phase it is
+// Checks which game phase it is and if position is valid
 void checkPhase(BoardState& state) {
     if ((state.whitePieces & state.blackPieces).any()) {
         throw std::runtime_error("Error: Two pieces occupy the same position!");
@@ -62,17 +62,6 @@ void checkPhase(BoardState& state) {
     }
 }
 
-// Debugging function for the empty neighbors map
-void checkFunctionEmptyNeighbors(const BoardState state, int cell) {
-    for (int neighbor : state.neighbors[cell]) {
-        std::cout << "\n\nEmpty neighbors of cell " << neighbor << " :\n";
-        for (int neigborsneighbor : state.emptyNeighbors[neighbor]){
-            std::cout << neigborsneighbor << " ";
-        }
-    }
-    std::cout << std::endl;
-}
-
 // Adds a single piece to the board and appends that state to history
 void inputAdd(BoardState& state, History& history) {
     std::vector<int> position = runMillsBoard(state, 1);
@@ -83,7 +72,7 @@ void inputAdd(BoardState& state, History& history) {
             state = hist.at(hist.size() - 2);
             history.deleteLastEntry();
         } catch (const std::out_of_range& e) {
-            std::cout << "Not enough history to go back!" << std::endl;
+            std::cout << "Not enough history to go back half a step!" << std::endl;
         }
     } else if (position[0] == -2) {
         std::vector<BoardState> hist = history.getHistory();
@@ -92,7 +81,7 @@ void inputAdd(BoardState& state, History& history) {
             history.deleteLastEntry();
             history.deleteLastEntry();
         } catch (const std::out_of_range& e) {
-            std::cout << "Not enough history to go back two steps!" << std::endl;
+            std::cout << "Not enough history to go back a full step!" << std::endl;
         }
     } else if (position[0] == -3) {
         exit(0);
@@ -200,7 +189,6 @@ void inputMove(BoardState& state, History& history) {
         for (int neighbour : state.neighbors[position[1]]) {
             state.emptyNeighbors[neighbour].erase(position[1]);
         }
-
 
         checkPhase(state);
         history.saveState(state);

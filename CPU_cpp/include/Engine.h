@@ -104,8 +104,6 @@ private:
 
 void checkPhase(BoardState& state);
 
-void checkFunctionEmptyNeighbors(const BoardState state, int cell);
-
 void inputAdd(BoardState& state, History& history);
 
 void inputRemove(BoardState& state, History& history);
