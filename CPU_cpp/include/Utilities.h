@@ -18,7 +18,7 @@ std::ostream& operator<<(std::ostream& os, const BoardState& boardState) {
 
 // Other functions
 
-void checkFunctionEmptyNeighbors(const BoardState state, int cell);
+void checkFunctionEmptyNeighbors(const BoardState& state);
 
 std::bitset<24> generateRandomBitset();
 

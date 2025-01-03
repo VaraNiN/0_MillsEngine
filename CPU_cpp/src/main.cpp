@@ -30,13 +30,13 @@ int main() {
         start = std::chrono::high_resolution_clock::now();
         callCount = 0;
         leaveCount = 0;
-        auto [eval, newState] = minimax(state, 4, -10000, 10000, false);
+        auto [eval, newState] = minimax(state, 5, -10000, 10000, false);
         end = std::chrono::high_resolution_clock::now();
         duration = end - start;
         std::cout << "There were " << callCount << " minimax calls (" << leaveCount << " leafs) taking " << duration.count() << " seconds \n";
         std::cout << "Average call length: " << 1e6 * duration.count() / callCount << " µs\n\n";
-
         state = newState;
+        //checkFunctionEmptyNeighbors(state);
         history.saveState(state);
     }
 

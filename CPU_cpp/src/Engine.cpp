@@ -11,17 +11,6 @@
 
 GameInfo gameInfo;
 
-void eraseElement(std::vector<int>& vec, int element) {
-    auto it = std::find(vec.begin(), vec.end(), element);
-    if (it != vec.end()) {
-        vec.erase(it);
-    }
-}
-
-void insertElement(std::vector<int>& vec, int element) {
-    vec.push_back(element);
-}
-
 std::bitset<50> generateKey(const BoardState& state) {
         std::bitset<50> key;
         key[0] = state.isTurnWhite;
@@ -177,17 +166,17 @@ std::vector<BoardState> removePieces(const BoardState& state) {
             }
             dummyState.emptySpaces.set(i);
             for (int neighbour : gameInfo.neighbors[i]) {
-                insertElement(dummyState.emptyNeighbors[neighbour], i);
+                dummyState.emptyNeighbors[neighbour].reset(i);
             }     
             dummyState.isTurnWhite = !dummyState.isTurnWhite;
             checkPhase(dummyState);
             children.emplace_back(dummyState);
-            //dummyState = state;
-            dummyState.whitePieces = state.whitePieces;
-            dummyState.blackPieces = state.blackPieces;
-            dummyState.emptySpaces = state.emptySpaces;
-            dummyState.emptyNeighbors = state.emptyNeighbors;
-            dummyState.isTurnWhite ^= true;
+            dummyState = state;
+            //dummyState.whitePieces = state.whitePieces;
+            //dummyState.blackPieces = state.blackPieces;
+            //dummyState.emptySpaces = state.emptySpaces;
+            //dummyState.emptyNeighbors = state.emptyNeighbors;
+            //dummyState.isTurnWhite ^= true;
         }
     }
     return children;
@@ -215,7 +204,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                 dummyState.emptySpaces.reset(i);
                 dummyState.moveNumber++;
                 for (int neighbour : gameInfo.neighbors[i]) {
-                    eraseElement(dummyState.emptyNeighbors[neighbour], i);
+                    dummyState.emptyNeighbors[neighbour].reset(i);
                 }
                 
                 if (madeMill) {
@@ -248,10 +237,10 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         dummyState.moveNumber++;
 
                         for (int neighbour : gameInfo.neighbors[i]) {
-                            insertElement(dummyState.emptyNeighbors[neighbour], i);
+                            dummyState.emptyNeighbors[neighbour].set(i);
                         }       
                         for (int neighbour : gameInfo.neighbors[j]) {
-                            eraseElement(dummyState.emptyNeighbors[neighbour], j);
+                            dummyState.emptyNeighbors[neighbour].reset(j);
                         }        
 
                         if (madeMill) {
@@ -287,10 +276,10 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         dummyState.moveNumber++;
 
                         for (int neighbour : gameInfo.neighbors[i]) {
-                            insertElement(dummyState.emptyNeighbors[neighbour], i);
+                            dummyState.emptyNeighbors[neighbour].set(i);
                         }       
                         for (int neighbour : gameInfo.neighbors[j]) {
-                            eraseElement(dummyState.emptyNeighbors[neighbour], j);
+                            dummyState.emptyNeighbors[neighbour].reset(j);
                         }           
 
                         if (madeMill) {
@@ -316,76 +305,79 @@ std::vector<BoardState> getChildren(const BoardState& state) {
     } else if (state.isTurnWhite) {
         for (int i = 0; i < 24; i++) {
             if (state.whitePieces[i]) {
-                for (int emptyNeighbor : state.emptyNeighbors[i]) {
-                    madeMill = checkMill(state, emptyNeighbor);
-                    dummyState.whitePieces.reset(i);
-                    dummyState.whitePieces.set(emptyNeighbor);
-                    dummyState.emptySpaces.set(i);
-                    dummyState.emptySpaces.reset(emptyNeighbor);
-                    dummyState.moveNumber++;
-                    for (int neighbour : gameInfo.neighbors[i]) {
-                        insertElement(dummyState.emptyNeighbors[neighbour], i);
-                    }       
-                    for (int neighbour : gameInfo.neighbors[emptyNeighbor]) {
-                        eraseElement(dummyState.emptyNeighbors[neighbour], emptyNeighbor);
-                    }  
+                for (int j = 0; j < 24; j++) {
+                    if (state.emptyNeighbors[i][j]) {
+                        madeMill = checkMill(state, j);
+                        dummyState.whitePieces.reset(i);
+                        dummyState.whitePieces.set(j);
+                        dummyState.emptySpaces.set(i);
+                        dummyState.emptySpaces.reset(j);
+                        dummyState.moveNumber++;
+                        for (int neighbour : gameInfo.neighbors[i]) {
+                            dummyState.emptyNeighbors[neighbour].set(i);
+                        }       
+                        for (int neighbour : gameInfo.neighbors[j]) {
+                            dummyState.emptyNeighbors[neighbour].reset(j);
+                        }  
 
-                    if (madeMill) {
-                        removedChildren = removePieces(dummyState);
-                        children.insert(children.end(), removedChildren.begin(), removedChildren.end());
-                    }  else {
-                        dummyState.isTurnWhite = !dummyState.isTurnWhite;
-                        checkPhase(dummyState);
-                        children.emplace_back(dummyState);
+                        if (madeMill) {
+                            removedChildren = removePieces(dummyState);
+                            children.insert(children.end(), removedChildren.begin(), removedChildren.end());
+                        }  else {
+                            dummyState.isTurnWhite = !dummyState.isTurnWhite;
+                            checkPhase(dummyState);
+                            children.emplace_back(dummyState);
+                        }
+
+                        dummyState = state;
+                        //dummyState.whitePieces = state.whitePieces;
+                        //dummyState.blackPieces = state.blackPieces;
+                        //dummyState.emptySpaces = state.emptySpaces;
+                        //dummyState.moveNumber = state.moveNumber;
+                        //dummyState.emptyNeighbors = state.emptyNeighbors;
+                        //dummyState.isTurnWhite ^= true;
                     }
-
-                    dummyState = state;
-                    //dummyState.whitePieces = state.whitePieces;
-                    //dummyState.blackPieces = state.blackPieces;
-                    //dummyState.emptySpaces = state.emptySpaces;
-                    //dummyState.moveNumber = state.moveNumber;
-                    //dummyState.emptyNeighbors = state.emptyNeighbors;
-                    //dummyState.isTurnWhite ^= true;
                 }
             }
         }
     } else {
         for (int i = 0; i < 24; i++) {
             if (state.blackPieces[i]) {
-                for (int emptyNeighbor : state.emptyNeighbors[i]) {
-                    madeMill = checkMill(state, emptyNeighbor);
-                    dummyState.blackPieces.reset(i);
-                    dummyState.blackPieces.set(emptyNeighbor);
-                    dummyState.emptySpaces.set(i);
-                    dummyState.emptySpaces.reset(emptyNeighbor);
-                    dummyState.moveNumber++;
-                    for (int neighbour : gameInfo.neighbors[i]) {
-                        insertElement(dummyState.emptyNeighbors[neighbour], i);
-                    }       
-                    for (int neighbour : gameInfo.neighbors[emptyNeighbor]) {
-                        eraseElement(dummyState.emptyNeighbors[neighbour], emptyNeighbor);
-                    }  
+                for (int j = 0; j < 24; j++) {
+                    if (state.emptyNeighbors[i][j]) {
+                        madeMill = checkMill(state, j);
+                        dummyState.blackPieces.reset(i);
+                        dummyState.blackPieces.set(j);
+                        dummyState.emptySpaces.set(i);
+                        dummyState.emptySpaces.reset(j);
+                        dummyState.moveNumber++;
+                        for (int neighbour : gameInfo.neighbors[i]) {
+                            dummyState.emptyNeighbors[neighbour].set(i);
+                        }       
+                        for (int neighbour : gameInfo.neighbors[j]) {
+                            dummyState.emptyNeighbors[neighbour].reset(j);
+                        }  
 
-                    if (madeMill) {
-                        removedChildren = removePieces(dummyState);
-                        children.insert(children.end(), removedChildren.begin(), removedChildren.end());
-                    } else {
-                        dummyState.isTurnWhite = !dummyState.isTurnWhite;
-                        checkPhase(dummyState);
-                        children.emplace_back(dummyState);
+                        if (madeMill) {
+                            removedChildren = removePieces(dummyState);
+                            children.insert(children.end(), removedChildren.begin(), removedChildren.end());
+                        }  else {
+                            dummyState.isTurnWhite = !dummyState.isTurnWhite;
+                            checkPhase(dummyState);
+                            children.emplace_back(dummyState);
+                        }
+
+                        dummyState = state;
+                        //dummyState.whitePieces = state.whitePieces;
+                        //dummyState.blackPieces = state.blackPieces;
+                        //dummyState.emptySpaces = state.emptySpaces;
+                        //dummyState.moveNumber = state.moveNumber;
+                        //dummyState.emptyNeighbors = state.emptyNeighbors;
+                        //dummyState.isTurnWhite ^= true;
                     }
-
-                    dummyState = state;
-                    //dummyState.whitePieces = state.whitePieces;
-                    //dummyState.blackPieces = state.blackPieces;
-                    //dummyState.emptySpaces = state.emptySpaces;
-                    //dummyState.moveNumber = state.moveNumber;
-                    //dummyState.emptyNeighbors = state.emptyNeighbors;
-                    //dummyState.isTurnWhite ^= true;
                 }
             }
         }
-
     }
 
     return children;

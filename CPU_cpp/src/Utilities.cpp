@@ -5,11 +5,13 @@
 #include <chrono>
 
 // Debugging function for the empty neighbors map
-void checkFunctionEmptyNeighbors(const BoardState state, int cell) {
-    for (int neighbor : gameInfo.neighbors[cell]) {
-        std::cout << "\n\nEmpty neighbors of cell " << neighbor << " :\n";
-        for (int neigborsneighbor : state.emptyNeighbors[neighbor]){
-            std::cout << neigborsneighbor << " ";
+void checkFunctionEmptyNeighbors(const BoardState& state) {
+    for (int i = 0; i < 24; i++) {
+        std::cout << "\n\nEmpty neighbors of cell " << i << " :\n";
+        for (int j = 0; j < 24; j++) { 
+            if (state.emptyNeighbors[i][j]) {
+                std::cout << j << " ";
+            }
         }
     }
     std::cout << std::endl;
