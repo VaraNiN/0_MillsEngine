@@ -56,7 +56,7 @@ void timeStuff(const BoardState& state, int its, int pos_every) {
             start = std::chrono::high_resolution_clock::now();
         }
         // enter Function here
-        auto dummy = getChildren(dummyState);
+        auto dummy = evaluate(dummyState);
     }
     end = std::chrono::high_resolution_clock::now();
     duration += end - start;

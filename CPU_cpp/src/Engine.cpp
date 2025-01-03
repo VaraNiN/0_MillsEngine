@@ -431,20 +431,10 @@ int isTerminalNode(const BoardState& state) {
     return 0;
 }
 
-//Evaluates the position
-//TODO: Change weightings based on the current phase of the game
-//TODO: Change weightings based on which player's turn it is?
-//TODO: Train these weightings with AI
-float evaluate(const BoardState& state) {
-    // Check if a playes has won (~0% of time)
-    int isTerminal = isTerminalNode(state);
-    if (isTerminal != 0) {
-        return 9001. * isTerminal;
-    }
-
+//Get the score based on the material on the board, weighted by position
+float scoreFromMaterial (const BoardState& state) {
     float score = 0.;
 
-    // Modify score based on material and position (~10% of time)
     const int corners[] = {0, 2, 3, 5, 6, 8, 15, 17, 18, 20, 21, 23};
     const int threeCrossings[] = {1, 7, 9, 11, 12, 14, 16, 22};
     const int fourCrossings[] = {4, 10, 13, 19};
@@ -472,10 +462,29 @@ float evaluate(const BoardState& state) {
             score -= gameInfo.weights.four_cross;
         }
     }
+    
+    return score;
+}
+
+//Evaluates the position
+//TODO: Change weightings based on the current phase of the game
+//TODO: Change weightings based on which player's turn it is?
+//TODO: Train these weightings with AI
+float evaluate(const BoardState& state) {
+
+    // Check if a playes has won (~5% of time)
+    int isTerminal = isTerminalNode(state);
+    if (isTerminal != 0) {
+        return 9001. * isTerminal;
+    }
+
+
+    // Modify score based on material and position (~15% of time)
+    float score = scoreFromMaterial(state);
 
 
     // Modify score based on (possible) mills in the position
-    Colours millNumbersClosed = countMill(state); // ~20% of time
+    Colours millNumbersClosed = countMill(state); // ~15% of time
     score += (millNumbersClosed.white - millNumbersClosed.black) * gameInfo.weights.closed_mill;
     Colours millNumbersOpen = countOpenMill(state); // ~25% of time
     score += (millNumbersOpen.white - millNumbersOpen.black) * gameInfo.weights.open_mill;
@@ -483,11 +492,9 @@ float evaluate(const BoardState& state) {
     score += (millNumbersDouble.white - millNumbersDouble.black) * gameInfo.weights.double_mill;
 
 
-
-
     // Modify score based on mobility of the pieces (not important if any player has flying phase)
     // Is important for the future game however if it's still early game
-    if (!state.isFlyingPhaseWhite & !state.isFlyingPhaseBlack) {    // ~20% of time
+    if (!state.isFlyingPhaseWhite & !state.isFlyingPhaseBlack) {    // ~15% of time
         Colours possibleMoves = getPossibleMidGameMoveNumbers(state);
         score += (possibleMoves.white - possibleMoves.black) * gameInfo.weights.legal_moves;
     }

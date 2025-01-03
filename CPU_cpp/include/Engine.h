@@ -245,6 +245,8 @@ Colours getPossibleMoveNumbers(const BoardState& state);
 
 Colours getPossibleMidGameMoveNumbers(const BoardState& state);
 
+float scoreFromMaterial (const BoardState& state);
+
 float evaluate(const BoardState& state);
 
 extern int callCount;
