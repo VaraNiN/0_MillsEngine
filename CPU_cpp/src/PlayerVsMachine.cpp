@@ -11,6 +11,7 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, Bo
     int turnsWithoutCapture = -1;
 
     while (true) {
+        // Check if game has ended
         int outcome = isTerminalNode(state);
         if (outcome == 1) {
             print("White has won!");
@@ -26,8 +27,9 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, Bo
             }
         }
 
-        show_position(state);
+        //show_position(state);
 
+        // Input moves from human and computer
         if (state.isPlayerWhite == state.isTurnWhite) {
             playerMove(state, history);
         } else {

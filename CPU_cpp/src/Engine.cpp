@@ -12,17 +12,6 @@
 GameInfo gameInfo;
 EvaluationWeights evalWeights;
 
-std::bitset<50> generateKey(const BoardState& state) {
-        std::bitset<50> key;
-        key[0] = state.isTurnWhite;
-        key[1] = state.isPlacingPhase;
-        std::bitset<50> piecesExtended(state.whitePieces.to_ulong());
-        key |= (piecesExtended << 2);
-        piecesExtended = std::bitset<50>(state.blackPieces.to_ulong());
-        key |= (piecesExtended << 26);
-        return key;
-}
-
 void History::saveState(const BoardState& state) {
     history.push_back(state);
 }
@@ -467,6 +456,18 @@ float scoreFromMaterial (const BoardState& state) {
     return score;
 }
 
+
+std::bitset<50> generateKey(const BoardState& state) {
+        std::bitset<50> key;
+        key[0] = state.isTurnWhite;
+        key[1] = state.isPlacingPhase;
+        std::bitset<50> piecesExtended(state.whitePieces.to_ulong());
+        key |= (piecesExtended << 2);
+        piecesExtended = std::bitset<50>(state.blackPieces.to_ulong());
+        key |= (piecesExtended << 26);
+        return key;
+}
+
 //Evaluates the position
 //TODO: Change weightings based on the current phase of the game
 //TODO: Change weightings based on which player's turn it is?
@@ -506,11 +507,23 @@ float evaluate(const BoardState& state) {
 int callCount = 0;
 int leafCount = 0;
 
+std::unordered_map<std::bitset<50>, std::pair<float, int>> lookupTable;
+
 std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer) {   
     callCount++;
+
+    std::bitset<50> key = generateKey(node);
+
+    if (lookupTable.find(key) != lookupTable.end() && lookupTable[key].second >= depth) {
+        return {lookupTable[key].first, node};
+    }
+
     if (depth == 0 || isTerminalNode(node) != 0) {
         leafCount++;
-        return {evaluate(node), node};    //if it is a leaf node, return eval
+        float eval = evaluate(node);
+        lookupTable[key] = {eval, depth};   // Maybe it would be smarter not to save this, because it's only a depth 0 evaluation at best. 
+                                            // Depends if the lookup or the evaluation of the state is faster.
+        return {eval, node};    // If it is a leaf node, return eval
     }
 
     BoardState bestNode;
@@ -528,6 +541,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             if (beta <= alpha)
                 break; // Beta cut-off
         }
+        lookupTable[key] = {maxEval, depth};
         return {maxEval, bestNode};
     } else {
         float minEval = 1e6;
@@ -542,6 +556,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             if (beta <= alpha)
                 break; // Alpha cut-off
         }
+        lookupTable[key] = {minEval, depth};
         return {minEval, bestNode};
     }
 }
