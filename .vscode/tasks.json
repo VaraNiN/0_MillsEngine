@@ -7,7 +7,7 @@
             "command": "g++",
             "args": [
                 "-std=c++17",
-                //"-pg",  // Enable profiling with gprof
+                "-pg",  // Enable profiling with gprof
                 "-I${workspaceFolder}/CPU_cpp/include",
                 "${workspaceFolder}/CPU_cpp/src/*.cpp",
                 "-o",

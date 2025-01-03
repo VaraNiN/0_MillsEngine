@@ -375,7 +375,7 @@ Colours getPossibleMoveNumbers(const BoardState& state) {
         } else {
             for (int i = 0; i < 24; i++) { 
                 if (state.whitePieces[i]) {
-                    result.white += state.emptyNeighbors[i].size();
+                    result.white += state.emptyNeighbors[i].count();
                 }
             }
         }
@@ -385,7 +385,7 @@ Colours getPossibleMoveNumbers(const BoardState& state) {
         } else {
             for (int i = 0; i < 24; i++) { 
                 if (state.blackPieces[i]) {
-                    result.black += state.emptyNeighbors[i].size();
+                    result.black += state.emptyNeighbors[i].count();
                 }
             }
         }
@@ -399,10 +399,10 @@ Colours getPossibleMidGameMoveNumbers(const BoardState& state) {
     
     for (int i = 0; i < 24; i++) { 
         if (state.whitePieces[i]) {
-            result.white += state.emptyNeighbors[i].size();
+            result.white += state.emptyNeighbors[i].count();
         }
         if (state.blackPieces[i]) {
-            result.black += state.emptyNeighbors[i].size();
+            result.black += state.emptyNeighbors[i].count();
         }
     }
     

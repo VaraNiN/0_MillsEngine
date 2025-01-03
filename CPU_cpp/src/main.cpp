@@ -11,8 +11,8 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    if (false) {
-        auto [eval, newState] = minimax(state, 6, -10000, 10000, false);
+    if (true) {
+        auto [eval, newState] = minimax(state, 7, -10000, 10000, true);
         return 0;
     }
 
