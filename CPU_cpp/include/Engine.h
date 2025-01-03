@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <unordered_set>
 #include <iostream>
+#include <chrono>
 
 template <typename T>
 void print(const T& message) {
@@ -192,9 +193,9 @@ struct EvaluationWeights {
     inline static const float corner = 1.0;
     inline static const float three_cross = 1.1;
     inline static const float four_cross = 1.2;
-    inline static const float open_mill = 0.3;
+    inline static const float open_mill = 0.4;
     inline static const float closed_mill = 0.2;
-    inline static const float double_mill = 1.5;
+    inline static const float double_mill = 0.5;
     inline static const float legal_moves = 0.1;
 };
 
@@ -253,6 +254,8 @@ extern int callCount;
 
 extern int leafCount;
 
-std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer);
+extern std::chrono::steady_clock::time_point minimaxStart;
+
+std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::bitset<50> parentKey = std::bitset<50>(), float maximumSearchTime = 1e6);
 
 #endif // ENGINE_H

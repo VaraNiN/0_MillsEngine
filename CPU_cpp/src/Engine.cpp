@@ -11,6 +11,7 @@
 #include <utility>
 #include <unordered_map>
 #include <mutex>
+#include <chrono>
 
 GameInfo gameInfo;
 EvaluationWeights evalWeights;
@@ -506,19 +507,25 @@ float evaluate(const BoardState& state) {
 
 int callCount = 0;
 int leafCount = 0;
+std::chrono::steady_clock::time_point minimaxStart = std::chrono::steady_clock::now();
 
 std::unordered_map<std::bitset<50>, std::pair<float, int>> lookupTable;
 std::mutex lookupTableMutex;
 
 
-std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer) {   
+std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::bitset<50> parentKey, float maximumSearchTime) {   
     callCount++;
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds = currentTime - minimaxStart;
+    if (elapsedSeconds.count() > maximumSearchTime) {
+        return {0., BoardState()};
+    }
 
     std::bitset<50> key = generateKey(node);
 
     {
         std::lock_guard<std::mutex> guard(lookupTableMutex);
-        if (lookupTable.find(key) != lookupTable.end() && lookupTable[key].second >= depth) {
+        if (key != parentKey && lookupTable.find(key) != lookupTable.end() && lookupTable[key].second >= depth) {   // the key != parentKey is important when using iterative deepening. otherwise the parent node might get passed back
             return {lookupTable[key].first, node};
         }
     }
@@ -559,7 +566,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             return left.first > right.first; //Maximizing player wants highest eval moves first
         });  
         for (const auto& [dummy1, child] : evaluatedChildren) {
-            auto [eval, dummy2] = minimax(child, depth - 1, alpha, beta, false);
+            auto [eval, dummy2] = minimax(child, depth - 1, alpha, beta, false, parentKey, maximumSearchTime);
             if (eval > maxEval) {
                 maxEval = eval;
                 bestNode = child;
@@ -579,7 +586,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             return left.first < right.first; //Minimizing player wants lowest eval moves first
         });
         for (const auto& [dummy1, child] : evaluatedChildren) {
-            auto [eval,dummy2] = minimax(child, depth - 1, alpha, beta, true);
+            auto [eval,dummy2] = minimax(child, depth - 1, alpha, beta, true, parentKey, maximumSearchTime);
             if (eval < minEval) {
                 minEval = eval;
                 bestNode = child;

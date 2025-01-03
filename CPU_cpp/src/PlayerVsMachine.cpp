@@ -12,6 +12,41 @@ void threadedMinimax(const BoardState& node, int depth, float alpha, float beta,
     result = minimax(node, depth, alpha, beta, maximizingPlayer);
 }
 
+
+std::pair<float, BoardState> iterativeDeepening(const BoardState& state, float timeLimit, int maxDepth) {
+    float bestEval = 0;
+    float eval = 0;
+    BoardState bestState = state;
+
+    if (state.isPlayerWhite) {
+        bestEval = 1e6;
+    } else {
+        bestEval = 1e6;
+    }
+
+    minimaxStart = std::chrono::steady_clock::now();
+
+    for (int depth = 1; depth < maxDepth; depth++) {
+        auto currentTime = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsedSeconds = currentTime - minimaxStart;
+
+        BoardState currentState;
+        std::tie(eval, currentState) = minimax(state, depth, -10000, 10000, !state.isPlayerWhite, generateKey(state), timeLimit);
+
+        if (elapsedSeconds.count() >= timeLimit) {
+            std::cout << "Time limit exceeded. Aborting search." << std::endl;
+            break;
+        }
+
+        bestEval = eval;
+        bestState = currentState;
+    
+        std::cout << "Depth: " << depth << ", Eval: " << eval << std::endl;
+    }
+
+    return {bestEval, bestState};
+}
+
 void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bool multiThreading, BoardState state, History history) {
     state.isPlayerWhite = isPlayerWhite;
     history.saveState(state);
@@ -80,7 +115,8 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
                     } 
                 }
             } else {
-                std::tie(eval, newState) = minimax(state, 5, -10000, 10000, !state.isPlayerWhite);
+                //std::tie(eval, newState) = minimax(state, 5, -10000, 10000, !state.isPlayerWhite);
+                std::tie(eval, newState) = iterativeDeepening(state, maxComputationTime, maxCallDepth);
             }
 
 
