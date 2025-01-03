@@ -74,34 +74,10 @@ void checkPhase(BoardState& state) {
 }
 
 // for a given board state and move of current colour, returns a bool telling if that move formed a mill
-bool checkMill(const BoardState& state, int movedPieceIndex) {
-    std::bitset<24> piecesToCheck;
-    if (state.isTurnWhite) {
-        piecesToCheck = state.whitePieces;
-    } else {
-        piecesToCheck = state.blackPieces;
-    }
-
-    int millCountBeforeMove = 0;
-    for (const std::bitset<24>& mill : gameInfo.possibleMills) {
-        if ((piecesToCheck & mill).count() == 3) {
-            millCountBeforeMove++;
-        }
-    }
-
-    piecesToCheck.set(movedPieceIndex);
-    int millCountAfterMove = 0;
-    for (const std::bitset<24>& mill : gameInfo.possibleMills) {
-        if ((piecesToCheck & mill).count() == 3) {
-            millCountAfterMove++;
-        }
-    }
-
-    if (millCountAfterMove > millCountBeforeMove) {
-        return true;
-    } else {
-        return false;
-    }
+bool checkMill(const BoardState& state, int pos) {
+    const auto& pieces = state.isTurnWhite ? state.whitePieces : state.blackPieces;
+    return (pieces & gameInfo.possibleMillsPerPosition[2 * pos]).count() == 3 || 
+           (pieces & gameInfo.possibleMillsPerPosition[2 * pos + 1]).count() == 3;
 }
 
 // for a given board state count the number of closed mills for both colours

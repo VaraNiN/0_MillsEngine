@@ -79,7 +79,7 @@ struct GameInfo {
         {19, 21, 23},    // 22
         {14, 22}         // 23
     };
-    inline static const std::vector<std::bitset<24>> possibleMills = {
+    inline static const std::bitset<24> possibleMills[16] = {
         std::bitset<24>("000000000000000000000111"), // Mill 1: {0, 1, 2}
         std::bitset<24>("000000000000000000111000"), // Mill 2: {3, 4, 5}
         std::bitset<24>("000000000000000111000000"), // Mill 3: {6, 7, 8}
@@ -97,7 +97,57 @@ struct GameInfo {
         std::bitset<24>("000100000010000000100000"), // Mill 15: {5, 13, 20}
         std::bitset<24>("100000000100000000000100"), // Mill 16: {2, 14, 23}
     };
-    inline static const std::vector<std::bitset<24>> possibleDoubleMills = {
+    inline static const std::bitset<24> possibleMillsPerPosition[48] = {
+        std::bitset<24>("000000000000000000000111"), // Mill Containing 0: Mill 1: {0, 1, 2}
+        std::bitset<24>("001000000000001000000001"), // Mill Containing 0: Mill 9: {0, 9, 21}
+        std::bitset<24>("000000000000000000000111"), // Mill Containing 1: Mill 1: {0, 1, 2}
+        std::bitset<24>("000000000000000010010010"), // Mill Containing 1: Mill 12: {1, 4, 7}
+        std::bitset<24>("000000000000000000000111"), // Mill Containing 2: Mill 1: {0, 1, 2}
+        std::bitset<24>("100000000100000000000100"), // Mill Containing 2: Mill 16: {2, 14, 23}
+        std::bitset<24>("000000000000000000111000"), // Mill Containing 3: Mill 2: {3, 4, 5}
+        std::bitset<24>("000001000000010000001000"), // Mill Containing 3: Mill 10: {3, 10, 18}
+        std::bitset<24>("000000000000000010010010"), // Mill Containing 4: Mill 12: {1, 4, 7}
+        std::bitset<24>("000000000000000000111000"), // Mill Containing 4: Mill 2: {3, 4, 5}
+        std::bitset<24>("000100000010000000100000"), // Mill Containing 5: Mill 15: {5, 13, 20}
+        std::bitset<24>("000000000000000000111000"), // Mill Containing 5: Mill 2: {3, 4, 5}
+        std::bitset<24>("000000000000000111000000"), // Mill Containing 6: Mill 3: {6, 7, 8}
+        std::bitset<24>("000000001000100001000000"), // Mill Containing 6: Mill 11: {6, 11, 15}
+        std::bitset<24>("000000000000000111000000"), // Mill Containing 7: Mill 3: {6, 7, 8}
+        std::bitset<24>("000000000000000010010010"), // Mill Containing 7: Mill 12: {1, 4, 7}
+        std::bitset<24>("000000000000000111000000"), // Mill Containing 8: Mill 3: {6, 7, 8}
+        std::bitset<24>("000000100001000100000000"), // Mill Containing 8: Mill 14: {8, 12, 17}
+        std::bitset<24>("000000000000111000000000"), // Mill Containing 9: Mill 4: {9, 10, 11}
+        std::bitset<24>("001000000000001000000001"), // Mill Containing 9: Mill 9: {0, 9, 21}
+        std::bitset<24>("000000000000111000000000"), // Mill Containing 10: Mill 4: {9, 10, 11}
+        std::bitset<24>("000001000000010000001000"), // Mill Containing 10: Mill 10: {3, 10, 18}
+        std::bitset<24>("000000000000111000000000"), // Mill Containing 11: Mill 4: {9, 10, 11}
+        std::bitset<24>("000000001000100001000000"), // Mill Containing 11: Mill 11: {6, 11, 15}
+        std::bitset<24>("000000000111000000000000"), // Mill Containing 12: Mill 5: {12, 13, 14}
+        std::bitset<24>("000000100001000100000000"), // Mill Containing 12: Mill 14: {8, 12, 17}
+        std::bitset<24>("000000000111000000000000"), // Mill Containing 13: Mill 5: {12, 13, 14}
+        std::bitset<24>("000100000010000000100000"), // Mill Containing 13: Mill 15: {5, 13, 20}
+        std::bitset<24>("000000000111000000000000"), // Mill Containing 14: Mill 5: {12, 13, 14}
+        std::bitset<24>("100000000100000000000100"), // Mill Containing 14: Mill 16: {2, 14, 23}
+        std::bitset<24>("000000111000000000000000"), // Mill Containing 15: Mill 6: {15, 16, 17}
+        std::bitset<24>("000000001000100001000000"), // Mill Containing 15: Mill 11: {6, 11, 15}
+        std::bitset<24>("000000111000000000000000"), // Mill Containing 16: Mill 6: {15, 16, 17}
+        std::bitset<24>("010010010000000000000000"), // Mill Containing 16: Mill 13: {16, 19, 22}
+        std::bitset<24>("000000111000000000000000"), // Mill Containing 17: Mill 6: {15, 16, 17}
+        std::bitset<24>("000000100001000100000000"), // Mill Containing 17: Mill 14: {8, 12, 17}
+        std::bitset<24>("000111000000000000000000"), // Mill Containing 18: Mill 7: {18, 19, 20}
+        std::bitset<24>("000001000000010000001000"), // Mill Containing 18: Mill 10: {3, 10, 18}
+        std::bitset<24>("000111000000000000000000"), // Mill Containing 19: Mill 7: {18, 19, 20}
+        std::bitset<24>("010010010000000000000000"), // Mill Containing 19: Mill 13: {16, 19, 22}
+        std::bitset<24>("000111000000000000000000"), // Mill Containing 20: Mill 7: {18, 19, 20}
+        std::bitset<24>("000100000010000000100000"), // Mill Containing 20: Mill 15: {5, 13, 20}
+        std::bitset<24>("111000000000000000000000"), // Mill Containing 21: Mill 8: {21, 22, 23}
+        std::bitset<24>("001000000000001000000001"), // Mill Containing 21: Mill 9: {0, 9, 21}
+        std::bitset<24>("111000000000000000000000"), // Mill Containing 22: Mill 8: {21, 22, 23}
+        std::bitset<24>("010010010000000000000000"), // Mill Containing 22: Mill 13: {16, 19, 22}
+        std::bitset<24>("111000000000000000000000"), // Mill Containing 23: Mill 8: {21, 22, 23}
+        std::bitset<24>("100000000100000000000100"), // Mill Containing 23: Mill 16: {2, 14, 23}    
+    };
+    inline static const std::bitset<24> possibleDoubleMills[16] = {
         std::bitset<24>("000000000000000000111101"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000000101111"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000111101000"), // Mill 2 + Mill 3
@@ -115,7 +165,7 @@ struct GameInfo {
         std::bitset<24>("100100000100000000100100"), // Mill 15 + Mill 16
         std::bitset<24>("100100000010000000100100"), // Mill 15 + Mill 16
     };
-    inline static const std::vector<std::bitset<24>> doubleMillBlockers = {
+    inline static const std::bitset<24> doubleMillBlockers[16] = {
         std::bitset<24>("000000000000000000000010"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000000010000"), // Mill 1 + Mill 2
         std::bitset<24>("000000000000000000010000"), // Mill 2 + Mill 3
