@@ -54,14 +54,20 @@ void History::clearHistory() {
 // Checks if position is valid
 void checkValidity(const BoardState& state){
     if ((state.whitePieces & state.blackPieces).any()) {
+        print(state.whitePieces);
+        print(state.blackPieces);
         throw std::runtime_error("Error: Two pieces occupy the same position!");
     } else if ((state.whitePieces & state.emptySpaces).any()) {
+        print(state.whitePieces);
+        print(state.emptySpaces);
         throw std::runtime_error("Error: Empty spaces are set wrong!");
     } else if ((state.blackPieces & state.emptySpaces).any()) {
+        print(state.blackPieces);
+        print(state.emptySpaces);
         throw std::runtime_error("Error: Empty spaces are set wrong!");
-    } else {
+    } /* else {
         std::cout << "Boardstate is valid!" << std::endl;
-    }
+    } */
 }
 
 // Checks which game phase it is
@@ -167,12 +173,10 @@ std::vector<BoardState> getChildren(const BoardState& state) {
     std::vector<BoardState> removedChildren;
     children.reserve(9);
     BoardState dummyState = state;
-    bool madeMill;
 
     if (state.isPlacingPhase) {
         for (int i = 0; i < 24; i++) {
             if (state.emptySpaces[i]) {
-                madeMill = checkMill(state, i);
                 if (state.isTurnWhite) {
                     dummyState.whitePieces.set(i);
                 } else {
@@ -184,7 +188,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.emptyNeighbors[neighbour].reset(i);
                 }
                 
-                if (madeMill) {
+                if (checkMill(state, i)) {
                     removedChildren = removePieces(dummyState);
                     children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                 } else {
@@ -206,7 +210,6 @@ std::vector<BoardState> getChildren(const BoardState& state) {
             if (state.whitePieces[i]) {
                 for (int j = 0; j < 24; j++) {
                     if (state.emptySpaces[j]) {
-                        madeMill = checkMill(state, j);
                         dummyState.whitePieces.reset(i);
                         dummyState.whitePieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -220,7 +223,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }        
 
-                        if (madeMill) {
+                        if (checkMill(state, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         } else {
@@ -245,7 +248,6 @@ std::vector<BoardState> getChildren(const BoardState& state) {
             if (state.blackPieces[i]) {
                 for (int j = 0; j < 24; j++) {
                     if (state.emptySpaces[j]) {
-                        madeMill = checkMill(state, j);
                         dummyState.blackPieces.reset(i);
                         dummyState.blackPieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -259,7 +261,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }           
 
-                        if (madeMill) {
+                        if (checkMill(state, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         } else {
@@ -284,7 +286,6 @@ std::vector<BoardState> getChildren(const BoardState& state) {
             if (state.whitePieces[i]) {
                 for (int j = 0; j < 24; j++) {
                     if (state.emptyNeighbors[i][j]) {
-                        madeMill = checkMill(state, j);
                         dummyState.whitePieces.reset(i);
                         dummyState.whitePieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -297,7 +298,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }  
 
-                        if (madeMill) {
+                        if (checkMill(state, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         }  else {
@@ -322,7 +323,6 @@ std::vector<BoardState> getChildren(const BoardState& state) {
             if (state.blackPieces[i]) {
                 for (int j = 0; j < 24; j++) {
                     if (state.emptyNeighbors[i][j]) {
-                        madeMill = checkMill(state, j);
                         dummyState.blackPieces.reset(i);
                         dummyState.blackPieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -335,7 +335,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }  
 
-                        if (madeMill) {
+                        if (checkMill(state, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         }  else {

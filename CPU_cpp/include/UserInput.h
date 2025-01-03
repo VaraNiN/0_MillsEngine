@@ -11,10 +11,13 @@
 #include <iostream>
 #include <cstdlib>
 
-void inputAdd(BoardState& state, History& history);
+
+int inputAdd(BoardState& state, History& history);
 
 void inputRemove(BoardState& state, History& history);
 
-void inputMove(BoardState& state, History& history);
+int inputMove(BoardState& state, History& history);
+
+void playerMove(BoardState& state, History& history);
 
 #endif // USERINPUT_H

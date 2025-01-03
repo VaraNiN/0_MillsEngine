@@ -2,16 +2,18 @@
 #include "GUI.h"
 #include "Utilities.h"
 #include "UserInput.h"
+#include "PlayerVsMachine.h"
 #include <iostream>
 #include <bitset>
 #include <chrono>
 
 int main() {
-    BoardState state;   //Current board position
-    History history;    //History of all board positions
-    history.saveState(state);
 
-    if (true) {
+    playGame(true);
+    return 0;
+
+
+    /* if (true) {
         auto [eval, newState] = minimax(state, 7, -10000, 10000, true);
         return 0;
     }
@@ -43,7 +45,7 @@ int main() {
         state = newState;
         //checkFunctionEmptyNeighbors(state);
         history.saveState(state);
-    }
+    } */
 
 
 

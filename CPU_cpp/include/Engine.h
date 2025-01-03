@@ -19,6 +19,7 @@ struct BoardState {
     std::bitset<24> blackPieces;
     std::bitset<24> emptySpaces = std::bitset<24>().set();
     std::int_fast8_t moveNumber = 0;
+    bool isPlayerWhite = true;
     bool isTurnWhite = true;    // if false, it is the black player's turn
     bool isPlacingPhase = true;   // if false, it is the moving phase or later
     bool isFlyingPhaseWhite = false;
@@ -106,10 +107,10 @@ struct GameInfo {
         std::bitset<24>("100000000100000000000100"), // Mill Containing 2: Mill 16: {2, 14, 23}
         std::bitset<24>("000000000000000000111000"), // Mill Containing 3: Mill 2: {3, 4, 5}
         std::bitset<24>("000001000000010000001000"), // Mill Containing 3: Mill 10: {3, 10, 18}
-        std::bitset<24>("000000000000000010010010"), // Mill Containing 4: Mill 12: {1, 4, 7}
         std::bitset<24>("000000000000000000111000"), // Mill Containing 4: Mill 2: {3, 4, 5}
-        std::bitset<24>("000100000010000000100000"), // Mill Containing 5: Mill 15: {5, 13, 20}
+        std::bitset<24>("000000000000000010010010"), // Mill Containing 4: Mill 12: {1, 4, 7}
         std::bitset<24>("000000000000000000111000"), // Mill Containing 5: Mill 2: {3, 4, 5}
+        std::bitset<24>("000100000010000000100000"), // Mill Containing 5: Mill 15: {5, 13, 20}
         std::bitset<24>("000000000000000111000000"), // Mill Containing 6: Mill 3: {6, 7, 8}
         std::bitset<24>("000000001000100001000000"), // Mill Containing 6: Mill 11: {6, 11, 15}
         std::bitset<24>("000000000000000111000000"), // Mill Containing 7: Mill 3: {6, 7, 8}
@@ -242,7 +243,9 @@ Colours getPossibleMoveNumbers(const BoardState& state);
 
 Colours getPossibleMidGameMoveNumbers(const BoardState& state);
 
-float scoreFromMaterial (const BoardState& state);
+int isTerminalNode(const BoardState& state);
+
+float scoreFromMaterial(const BoardState& state);
 
 float evaluate(const BoardState& state);
 
