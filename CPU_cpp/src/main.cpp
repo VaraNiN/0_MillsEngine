@@ -11,7 +11,7 @@ int main() {
     History history;    //History of all board positions
     history.saveState(state);
 
-    if (true) {
+    if (false) {
         int its = 1000;
         int every_pos = 20;
 
@@ -30,7 +30,7 @@ int main() {
         start = std::chrono::high_resolution_clock::now();
         callCount = 0;
         leaveCount = 0;
-        auto [eval, newState] = minimax(state, 5, -10000, 10000, false);
+        auto [eval, newState] = minimax(state, 4, -10000, 10000, false);
         end = std::chrono::high_resolution_clock::now();
         duration = end - start;
         std::cout << "There were " << callCount << " minimax calls (" << leaveCount << " leafs) taking " << duration.count() << " seconds \n";

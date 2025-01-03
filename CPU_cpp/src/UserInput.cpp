@@ -45,8 +45,8 @@ void inputAdd(BoardState& state, History& history) {
         state.moveNumber ++;
         
         // Update empty neighbours map
-        for (int neighbour : state.neighbors[position[0]]) {
-            state.emptyNeighbors[neighbour].erase(position[0]);
+        for (int neighbour : gameInfo.neighbors[position[0]]) {
+            eraseElement(state.emptyNeighbors[neighbour], position[0]);
         }
         
         checkPhase(state);
@@ -81,8 +81,8 @@ void inputRemove(BoardState& state, History& history) {
         state.isTurnWhite = !state.isTurnWhite;
 
         // Update empty neighbours map
-        for (int neighbour : state.neighbors[position[0]]) {
-            state.emptyNeighbors[neighbour].insert(position[0]);
+        for (int neighbour : gameInfo.neighbors[position[0]]) {
+            insertElement(state.emptyNeighbors[neighbour], position[0]);
         }
 
         checkPhase(state);
@@ -136,11 +136,11 @@ void inputMove(BoardState& state, History& history) {
         state.moveNumber ++;
 
         // Update empty neighbours map
-        for (int neighbour : state.neighbors[position[0]]) {
-            state.emptyNeighbors[neighbour].insert(position[0]);
+        for (int neighbour : gameInfo.neighbors[position[0]]) {
+            insertElement(state.emptyNeighbors[neighbour], position[0]);
         }
-        for (int neighbour : state.neighbors[position[1]]) {
-            state.emptyNeighbors[neighbour].erase(position[1]);
+        for (int neighbour : gameInfo.neighbors[position[1]]) {
+            eraseElement(state.emptyNeighbors[neighbour], position[1]);
         }
 
         checkPhase(state);

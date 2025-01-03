@@ -9,6 +9,18 @@
 #include <cstdlib>
 #include <algorithm> 
 
+GameInfo gameInfo;
+
+void eraseElement(std::vector<int>& vec, int element) {
+    auto it = std::find(vec.begin(), vec.end(), element);
+    if (it != vec.end()) {
+        vec.erase(it);
+    }
+}
+
+void insertElement(std::vector<int>& vec, int element) {
+    vec.push_back(element);
+}
 
 std::bitset<50> generateKey(const BoardState& state) {
         std::bitset<50> key;
@@ -82,7 +94,7 @@ bool checkMill(const BoardState& state, int movedPieceIndex) {
     }
 
     int millCountBeforeMove = 0;
-    for (const std::bitset<24>& mill : state.possibleMills) {
+    for (const std::bitset<24>& mill : gameInfo.possibleMills) {
         if ((piecesToCheck & mill).count() == 3) {
             millCountBeforeMove++;
         }
@@ -90,7 +102,7 @@ bool checkMill(const BoardState& state, int movedPieceIndex) {
 
     piecesToCheck.set(movedPieceIndex);
     int millCountAfterMove = 0;
-    for (const std::bitset<24>& mill : state.possibleMills) {
+    for (const std::bitset<24>& mill : gameInfo.possibleMills) {
         if ((piecesToCheck & mill).count() == 3) {
             millCountAfterMove++;
         }
@@ -107,7 +119,7 @@ bool checkMill(const BoardState& state, int movedPieceIndex) {
 Colours countMill(const BoardState& state) {
     Colours result;
 
-    for (const std::bitset<24>& mill : state.possibleMills) {
+    for (const std::bitset<24>& mill : gameInfo.possibleMills) {
         if ((state.whitePieces & mill).count() == 3) {
             result.white++;
         }
@@ -123,7 +135,7 @@ Colours countMill(const BoardState& state) {
 Colours countOpenMill(const BoardState& state) {
     Colours result;
 
-    for (const std::bitset<24>& mill : state.possibleMills) {
+    for (const std::bitset<24>& mill : gameInfo.possibleMills) {
         if ((state.whitePieces & mill).count() == 2 & !(state.blackPieces & mill).any()) {
             result.white++;
         }
@@ -140,10 +152,10 @@ Colours countDoubleMill(const BoardState& state) {
     Colours result;
 
     for (int i = 0; i < 16; i++)  {
-        if ((state.whitePieces & state.possibleDoubleMills[i]).count() == 5 & !(state.blackPieces & state.doubleMillBlockers[i]).any()) {
+        if ((state.whitePieces & gameInfo.possibleDoubleMills[i]).count() == 5 & !(state.blackPieces & gameInfo.doubleMillBlockers[i]).any()) {
             result.white++;
         }
-        if ((state.blackPieces & state.possibleDoubleMills[i]).count() == 5 & !(state.whitePieces & state.doubleMillBlockers[i]).any()) {
+        if ((state.blackPieces & gameInfo.possibleDoubleMills[i]).count() == 5 & !(state.whitePieces & gameInfo.doubleMillBlockers[i]).any()) {
             result.white++;
         }
     }
@@ -154,6 +166,7 @@ Colours countDoubleMill(const BoardState& state) {
 // returns vector with all options for pieces of the non current colour being removed
 std::vector<BoardState> removePieces(const BoardState& state) {
     std::vector<BoardState> children;
+    children.reserve(9);
     BoardState dummyState = state;
     for (int i = 0; i < 24; i++) {
         if (state.blackPieces[i] & state.isTurnWhite || state.whitePieces[i] & !state.isTurnWhite) {
@@ -163,13 +176,18 @@ std::vector<BoardState> removePieces(const BoardState& state) {
                 dummyState.whitePieces.reset(i);
             }
             dummyState.emptySpaces.set(i);
-            for (int neighbour : state.neighbors[i]) {
-                dummyState.emptyNeighbors[neighbour].insert(i);
+            for (int neighbour : gameInfo.neighbors[i]) {
+                insertElement(dummyState.emptyNeighbors[neighbour], i);
             }     
             dummyState.isTurnWhite = !dummyState.isTurnWhite;
             checkPhase(dummyState);
-            children.push_back(dummyState);
-            dummyState = state;
+            children.emplace_back(dummyState);
+            //dummyState = state;
+            dummyState.whitePieces = state.whitePieces;
+            dummyState.blackPieces = state.blackPieces;
+            dummyState.emptySpaces = state.emptySpaces;
+            dummyState.emptyNeighbors = state.emptyNeighbors;
+            dummyState.isTurnWhite ^= true;
         }
     }
     return children;
@@ -179,7 +197,9 @@ std::vector<BoardState> removePieces(const BoardState& state) {
 //TODO: Write this more concisely
 std::vector<BoardState> getChildren(const BoardState& state) {
     std::vector<BoardState> children;
+    children.reserve(100);
     std::vector<BoardState> removedChildren;
+    children.reserve(9);
     BoardState dummyState = state;
     bool madeMill;
 
@@ -194,19 +214,25 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                 }
                 dummyState.emptySpaces.reset(i);
                 dummyState.moveNumber++;
-                for (int neighbour : state.neighbors[i]) {
-                    dummyState.emptyNeighbors[neighbour].erase(i);
+                for (int neighbour : gameInfo.neighbors[i]) {
+                    eraseElement(dummyState.emptyNeighbors[neighbour], i);
                 }
                 
                 if (madeMill) {
                     removedChildren = removePieces(dummyState);
                     children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                 } else {
-                    dummyState.isTurnWhite = !dummyState.isTurnWhite;
+                    dummyState.isTurnWhite ^= true;
                     checkPhase(dummyState);
-                    children.push_back(dummyState);
+                    children.emplace_back(dummyState);
                 }
                 dummyState = state;
+                //dummyState.whitePieces = state.whitePieces;
+                //dummyState.blackPieces = state.blackPieces;
+                //dummyState.emptySpaces = state.emptySpaces;
+                //dummyState.moveNumber = state.moveNumber;
+                //dummyState.emptyNeighbors = state.emptyNeighbors;
+                //dummyState.isTurnWhite ^= true;
             }
         }
     } else if (state.isTurnWhite & state.isFlyingPhaseWhite) {
@@ -215,18 +241,17 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                 for (int j = 0; j < 24; j++) {
                     if (state.emptySpaces[j]) {
                         madeMill = checkMill(state, j);
-                        print(madeMill);
                         dummyState.whitePieces.reset(i);
                         dummyState.whitePieces.set(j);
                         dummyState.emptySpaces.set(i);
                         dummyState.emptySpaces.reset(j);
                         dummyState.moveNumber++;
 
-                        for (int neighbour : state.neighbors[i]) {
-                            dummyState.emptyNeighbors[neighbour].insert(i);
+                        for (int neighbour : gameInfo.neighbors[i]) {
+                            insertElement(dummyState.emptyNeighbors[neighbour], i);
                         }       
-                        for (int neighbour : state.neighbors[j]) {
-                            dummyState.emptyNeighbors[neighbour].erase(j);
+                        for (int neighbour : gameInfo.neighbors[j]) {
+                            eraseElement(dummyState.emptyNeighbors[neighbour], j);
                         }        
 
                         if (madeMill) {
@@ -235,10 +260,16 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         } else {
                             dummyState.isTurnWhite = !dummyState.isTurnWhite;
                             checkPhase(dummyState);
-                            children.push_back(dummyState);
+                            children.emplace_back(dummyState);
                         }
 
                         dummyState = state;
+                        //dummyState.whitePieces = state.whitePieces;
+                        //dummyState.blackPieces = state.blackPieces;
+                        //dummyState.emptySpaces = state.emptySpaces;
+                        //dummyState.moveNumber = state.moveNumber;
+                        //dummyState.emptyNeighbors = state.emptyNeighbors;
+                        //dummyState.isTurnWhite ^= true;
                     }
                 }
             }
@@ -255,12 +286,12 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         dummyState.emptySpaces.reset(j);
                         dummyState.moveNumber++;
 
-                        for (int neighbour : state.neighbors[i]) {
-                            dummyState.emptyNeighbors[neighbour].insert(i);
+                        for (int neighbour : gameInfo.neighbors[i]) {
+                            insertElement(dummyState.emptyNeighbors[neighbour], i);
                         }       
-                        for (int neighbour : state.neighbors[j]) {
-                            dummyState.emptyNeighbors[neighbour].erase(j);
-                        }        
+                        for (int neighbour : gameInfo.neighbors[j]) {
+                            eraseElement(dummyState.emptyNeighbors[neighbour], j);
+                        }           
 
                         if (madeMill) {
                             removedChildren = removePieces(dummyState);
@@ -268,10 +299,16 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                         } else {
                             dummyState.isTurnWhite = !dummyState.isTurnWhite;
                             checkPhase(dummyState);
-                            children.push_back(dummyState);
+                            children.emplace_back(dummyState);
                         }
 
                         dummyState = state;
+                        //dummyState.whitePieces = state.whitePieces;
+                        //dummyState.blackPieces = state.blackPieces;
+                        //dummyState.emptySpaces = state.emptySpaces;
+                        //dummyState.moveNumber = state.moveNumber;
+                        //dummyState.emptyNeighbors = state.emptyNeighbors;
+                        //dummyState.isTurnWhite ^= true;
                     }
                 }
             }
@@ -286,11 +323,11 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.emptySpaces.set(i);
                     dummyState.emptySpaces.reset(emptyNeighbor);
                     dummyState.moveNumber++;
-                    for (int neighbour : state.neighbors[i]) {
-                        dummyState.emptyNeighbors[neighbour].insert(i);
+                    for (int neighbour : gameInfo.neighbors[i]) {
+                        insertElement(dummyState.emptyNeighbors[neighbour], i);
                     }       
-                    for (int neighbour : state.neighbors[emptyNeighbor]) {
-                        dummyState.emptyNeighbors[neighbour].erase(emptyNeighbor);
+                    for (int neighbour : gameInfo.neighbors[emptyNeighbor]) {
+                        eraseElement(dummyState.emptyNeighbors[neighbour], emptyNeighbor);
                     }  
 
                     if (madeMill) {
@@ -299,10 +336,16 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     }  else {
                         dummyState.isTurnWhite = !dummyState.isTurnWhite;
                         checkPhase(dummyState);
-                        children.push_back(dummyState);
+                        children.emplace_back(dummyState);
                     }
 
                     dummyState = state;
+                    //dummyState.whitePieces = state.whitePieces;
+                    //dummyState.blackPieces = state.blackPieces;
+                    //dummyState.emptySpaces = state.emptySpaces;
+                    //dummyState.moveNumber = state.moveNumber;
+                    //dummyState.emptyNeighbors = state.emptyNeighbors;
+                    //dummyState.isTurnWhite ^= true;
                 }
             }
         }
@@ -316,11 +359,11 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.emptySpaces.set(i);
                     dummyState.emptySpaces.reset(emptyNeighbor);
                     dummyState.moveNumber++;
-                    for (int neighbour : state.neighbors[i]) {
-                        dummyState.emptyNeighbors[neighbour].insert(i);
+                    for (int neighbour : gameInfo.neighbors[i]) {
+                        insertElement(dummyState.emptyNeighbors[neighbour], i);
                     }       
-                    for (int neighbour : state.neighbors[emptyNeighbor]) {
-                        dummyState.emptyNeighbors[neighbour].erase(emptyNeighbor);
+                    for (int neighbour : gameInfo.neighbors[emptyNeighbor]) {
+                        eraseElement(dummyState.emptyNeighbors[neighbour], emptyNeighbor);
                     }  
 
                     if (madeMill) {
@@ -329,10 +372,16 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     } else {
                         dummyState.isTurnWhite = !dummyState.isTurnWhite;
                         checkPhase(dummyState);
-                        children.push_back(dummyState);
+                        children.emplace_back(dummyState);
                     }
 
                     dummyState = state;
+                    //dummyState.whitePieces = state.whitePieces;
+                    //dummyState.blackPieces = state.blackPieces;
+                    //dummyState.emptySpaces = state.emptySpaces;
+                    //dummyState.moveNumber = state.moveNumber;
+                    //dummyState.emptyNeighbors = state.emptyNeighbors;
+                    //dummyState.isTurnWhite ^= true;
                 }
             }
         }
@@ -434,36 +483,36 @@ float evaluate(const BoardState& state) {
 
     for (int pos : corners) {
         if (state.whitePieces[pos]) {
-            score += state.weights.corner;
+            score += gameInfo.weights.corner;
         } else if (state.blackPieces[pos]) {
-            score -= state.weights.corner;
+            score -= gameInfo.weights.corner;
         }
     }
 
     for (int pos : threeCrossings) {
         if (state.whitePieces[pos]) {
-            score += state.weights.three_cross;
+            score += gameInfo.weights.three_cross;
         } else if (state.blackPieces[pos]) {
-            score -= state.weights.three_cross;
+            score -= gameInfo.weights.three_cross;
         }
     }
 
     for (int pos : fourCrossings) {
         if (state.whitePieces[pos]) {
-            score += state.weights.four_cross;
+            score += gameInfo.weights.four_cross;
         } else if (state.blackPieces[pos]) {
-            score -= state.weights.four_cross;
+            score -= gameInfo.weights.four_cross;
         }
     }
 
 
     // Modify score based on (possible) mills in the position
     Colours millNumbersClosed = countMill(state); // ~20% of time
-    score += (millNumbersClosed.white - millNumbersClosed.black) * state.weights.closed_mill;
+    score += (millNumbersClosed.white - millNumbersClosed.black) * gameInfo.weights.closed_mill;
     Colours millNumbersOpen = countOpenMill(state); // ~25% of time
-    score += (millNumbersOpen.white - millNumbersOpen.black) * state.weights.open_mill;
+    score += (millNumbersOpen.white - millNumbersOpen.black) * gameInfo.weights.open_mill;
     Colours millNumbersDouble = countDoubleMill(state); // ~25% of time
-    score += (millNumbersDouble.white - millNumbersDouble.black) * state.weights.double_mill;
+    score += (millNumbersDouble.white - millNumbersDouble.black) * gameInfo.weights.double_mill;
 
 
 
@@ -472,7 +521,7 @@ float evaluate(const BoardState& state) {
     // Is important for the future game however if it's still early game
     if (!state.isFlyingPhaseWhite & !state.isFlyingPhaseBlack) {    // ~20% of time
         Colours possibleMoves = getPossibleMidGameMoveNumbers(state);
-        score += (possibleMoves.white - possibleMoves.black) * state.weights.legal_moves;
+        score += (possibleMoves.white - possibleMoves.black) * gameInfo.weights.legal_moves;
     }
 
     return score;

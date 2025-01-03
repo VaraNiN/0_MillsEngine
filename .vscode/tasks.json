@@ -7,6 +7,7 @@
             "command": "g++",
             "args": [
                 "-std=c++17",
+                //"-pg",  // Enable profiling with gprof
                 "-I${workspaceFolder}/CPU_cpp/include",
                 "${workspaceFolder}/CPU_cpp/src/*.cpp",
                 "-o",
@@ -15,12 +16,61 @@
                 "-lsfml-window",
                 "-lsfml-system"
             ],
+            "options": {
+                "cwd": "${workspaceFolder}/CPU_cpp"
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "problemMatcher": ["$gcc"],
             "detail": "Generated task for building the project."
+        },
+        {
+            "label": "run and profile",
+            "type": "shell",
+            "command": "${workspaceFolder}/CPU_cpp/main",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}/CPU_cpp"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "Run the executable to generate profiling data."
+        },
+        {
+            "label": "generate profile image",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "gprof ${workspaceFolder}/CPU_cpp/main ${workspaceFolder}/CPU_cpp/gmon.out | gprof2dot -s | dot -Tpng -o ${workspaceFolder}/CPU_cpp/graph.png"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/CPU_cpp"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "Generate a profile image from the profiling data."
+        },
+        {
+            "label": "build and profile",
+            "dependsOn": [
+                "build",
+                "run and profile",
+                "generate profile image"
+            ],
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

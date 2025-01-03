@@ -23,7 +23,7 @@ struct BoardState {
     bool isPlacingPhase = true;   // if false, it is the moving phase or later
     bool isFlyingPhaseWhite = false;
     bool isFlyingPhaseBlack = false;
-    std::vector<std::unordered_set<int>> emptyNeighbors = {
+    std::vector<std::vector<int>> emptyNeighbors = {
         {1, 9},          // 0
         {0, 2, 4},       // 1
         {1, 14},         // 2
@@ -49,7 +49,11 @@ struct BoardState {
         {19, 21, 23},    // 22
         {14, 22}         // 23
     };
-    inline static const std::vector<std::unordered_set<int>> neighbors = {
+};
+
+
+struct GameInfo {
+    inline static const std::vector<std::vector<int>> neighbors = {
         {1, 9},          // 0
         {0, 2, 4},       // 1
         {1, 14},         // 2
@@ -143,15 +147,23 @@ struct BoardState {
             : corner(1.0), three_cross(1.1), four_cross(1.2), open_mill(0.3),
               closed_mill(0.2), double_mill(1.5), legal_moves(0.1) {}
     };
-
     inline static const Weights weights;
+
 };
+
+extern GameInfo gameInfo;
 
 
 struct Colours {
     int white = 0;
     int black = 0;
 };
+
+// Other Functions
+
+void eraseElement(std::vector<int>& vec, int element);
+
+void insertElement(std::vector<int>& vec, int element);
 
 std::bitset<50> generateKey(const BoardState& state);
 
