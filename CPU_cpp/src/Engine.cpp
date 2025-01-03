@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <algorithm> 
 #include <utility>
+#include <unordered_map>
+#include <mutex>
 
 GameInfo gameInfo;
 EvaluationWeights evalWeights;
@@ -506,20 +508,28 @@ int callCount = 0;
 int leafCount = 0;
 
 std::unordered_map<std::bitset<50>, std::pair<float, int>> lookupTable;
+std::mutex lookupTableMutex;
+
 
 std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer) {   
     callCount++;
 
     std::bitset<50> key = generateKey(node);
 
-    if (lookupTable.find(key) != lookupTable.end() && lookupTable[key].second >= depth) {
-        return {lookupTable[key].first, node};
+    {
+        std::lock_guard<std::mutex> guard(lookupTableMutex);
+        if (lookupTable.find(key) != lookupTable.end() && lookupTable[key].second >= depth) {
+            return {lookupTable[key].first, node};
+        }
     }
 
     if (depth == 0 || isTerminalNode(node) != 0) {
-        leafCount++;    // These actually now basically never get hit unless the node is terminal, because we already save the child evals in the lookup table
+        leafCount++;
         float eval = evaluate(node);
-        lookupTable[key] = {eval, depth};
+        {
+            std::lock_guard<std::mutex> guard(lookupTableMutex);
+            lookupTable[key] = {eval, depth};
+        }
         return {eval, node};
     }
 
@@ -531,11 +541,14 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
     for (const BoardState& child : children) {
         std::bitset<50> childKey = generateKey(child);
         float childEval;
-        if (lookupTable.find(childKey) != lookupTable.end()) {
-            childEval = lookupTable[childKey].first;
-        } else {
-            childEval = evaluate(child);    // Maybe one should somehow weight this, because static evaluations will have lower accuracy than lookups with depth
-            lookupTable[childKey] = {childEval, 0};
+        {
+            std::lock_guard<std::mutex> guard(lookupTableMutex);
+            if (lookupTable.find(childKey) != lookupTable.end()) {
+                childEval = lookupTable[childKey].first;
+            } else {
+                childEval = evaluate(child);
+                lookupTable[childKey] = {childEval, 0};
+            }
         }
         evaluatedChildren.push_back({childEval, child});
     }
@@ -555,7 +568,10 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             if (beta <= alpha)
                 break; // Beta cut-off
         }
-        lookupTable[key] = {maxEval, depth};
+        {
+            std::lock_guard<std::mutex> guard(lookupTableMutex);
+            lookupTable[key] = {maxEval, depth};
+        }
         return {maxEval, bestNode};
     } else {
         float minEval = 1e6;
@@ -572,7 +588,10 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             if (beta <= alpha)
                 break; // Alpha cut-off
         }
-        lookupTable[key] = {minEval, depth};
+        {
+            std::lock_guard<std::mutex> guard(lookupTableMutex);
+            lookupTable[key] = {minEval, depth};
+        }
         return {minEval, bestNode};
     }
 }

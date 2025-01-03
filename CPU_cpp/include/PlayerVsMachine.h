@@ -5,6 +5,8 @@
 #include "GUI.h"
 #include "UserInput.h"
 
-void playGame(bool isPlayerWhite, float maxComputationTime = 10., int maxCallDepth = 100, BoardState state = BoardState(), History history = History());
+void threadedMinimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::pair<float, BoardState>& result);
+
+void playGame(bool isPlayerWhite, float maxComputationTime = 10., int maxCallDepth = 100, bool multiThreading = false, BoardState state = BoardState(), History history = History());
 
 #endif // PLAYERVSMACHINE_H
