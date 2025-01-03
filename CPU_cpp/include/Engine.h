@@ -183,25 +183,22 @@ struct GameInfo {
         std::bitset<24>("000000000010000000000000"), // Mill 15 + Mill 16
         std::bitset<24>("000000000100000000000000"), // Mill 15 + Mill 16
     };
-    struct Weights {
-        float corner;
-        float three_cross;
-        float four_cross;
-        float open_mill;
-        float closed_mill;
-        float double_mill;
-        float legal_moves;
-
-        // Default constructor
-        Weights()
-            : corner(1.0), three_cross(1.1), four_cross(1.2), open_mill(0.3),
-              closed_mill(0.2), double_mill(1.5), legal_moves(0.1) {}
-    };
-    inline static const Weights weights;
-
 };
 
 extern GameInfo gameInfo;
+
+struct EvaluationWeights {
+    inline static const float corner = 1.0;
+    inline static const float three_cross = 1.1;
+    inline static const float four_cross = 1.2;
+    inline static const float open_mill = 0.3;
+    inline static const float closed_mill = 0.2;
+    inline static const float double_mill = 1.5;
+    inline static const float legal_moves = 0.1;
+};
+
+extern EvaluationWeights evalWeights;
+
 
 
 struct Colours {
@@ -251,7 +248,7 @@ float evaluate(const BoardState& state);
 
 extern int callCount;
 
-extern int leaveCount;
+extern int leafCount;
 
 std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer);
 

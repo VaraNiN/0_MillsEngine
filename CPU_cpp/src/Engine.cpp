@@ -10,6 +10,7 @@
 #include <algorithm> 
 
 GameInfo gameInfo;
+EvaluationWeights evalWeights;
 
 std::bitset<50> generateKey(const BoardState& state) {
         std::bitset<50> key;
@@ -441,25 +442,25 @@ float scoreFromMaterial (const BoardState& state) {
 
     for (int pos : corners) {
         if (state.whitePieces[pos]) {
-            score += gameInfo.weights.corner;
+            score += evalWeights.corner;
         } else if (state.blackPieces[pos]) {
-            score -= gameInfo.weights.corner;
+            score -= evalWeights.corner;
         }
     }
 
     for (int pos : threeCrossings) {
         if (state.whitePieces[pos]) {
-            score += gameInfo.weights.three_cross;
+            score += evalWeights.three_cross;
         } else if (state.blackPieces[pos]) {
-            score -= gameInfo.weights.three_cross;
+            score -= evalWeights.three_cross;
         }
     }
 
     for (int pos : fourCrossings) {
         if (state.whitePieces[pos]) {
-            score += gameInfo.weights.four_cross;
+            score += evalWeights.four_cross;
         } else if (state.blackPieces[pos]) {
-            score -= gameInfo.weights.four_cross;
+            score -= evalWeights.four_cross;
         }
     }
     
@@ -485,30 +486,30 @@ float evaluate(const BoardState& state) {
 
     // Modify score based on (possible) mills in the position
     Colours millNumbersClosed = countMill(state); // ~15% of time
-    score += (millNumbersClosed.white - millNumbersClosed.black) * gameInfo.weights.closed_mill;
+    score += (millNumbersClosed.white - millNumbersClosed.black) * evalWeights.closed_mill;
     Colours millNumbersOpen = countOpenMill(state); // ~25% of time
-    score += (millNumbersOpen.white - millNumbersOpen.black) * gameInfo.weights.open_mill;
+    score += (millNumbersOpen.white - millNumbersOpen.black) * evalWeights.open_mill;
     Colours millNumbersDouble = countDoubleMill(state); // ~25% of time
-    score += (millNumbersDouble.white - millNumbersDouble.black) * gameInfo.weights.double_mill;
+    score += (millNumbersDouble.white - millNumbersDouble.black) * evalWeights.double_mill;
 
 
     // Modify score based on mobility of the pieces (not important if any player has flying phase)
     // Is important for the future game however if it's still early game
     if (!state.isFlyingPhaseWhite & !state.isFlyingPhaseBlack) {    // ~15% of time
         Colours possibleMoves = getPossibleMidGameMoveNumbers(state);
-        score += (possibleMoves.white - possibleMoves.black) * gameInfo.weights.legal_moves;
+        score += (possibleMoves.white - possibleMoves.black) * evalWeights.legal_moves;
     }
 
     return score;
 }
 
 int callCount = 0;
-int leaveCount = 0;
+int leafCount = 0;
 
 std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer) {   
     callCount++;
     if (depth == 0 || isTerminalNode(node) != 0) {
-        leaveCount++;
+        leafCount++;
         return {evaluate(node), node};    //if it is a leaf node, return eval
     }
 

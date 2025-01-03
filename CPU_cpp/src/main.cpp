@@ -16,7 +16,7 @@ int main() {
         return 0;
     }
 
-    if (true) {
+    if (false) {
         int its = 1e6;
         int every_pos = 1e2;
 
@@ -34,11 +34,11 @@ int main() {
         inputAdd(state, history);
         start = std::chrono::high_resolution_clock::now();
         callCount = 0;
-        leaveCount = 0;
+        leafCount = 0;
         auto [eval, newState] = minimax(state, 6, -10000, 10000, false);
         end = std::chrono::high_resolution_clock::now();
         duration = end - start;
-        std::cout << "There were " << callCount << " minimax calls (" << leaveCount << " leafs) taking " << duration.count() << " seconds \n";
+        std::cout << "There were " << callCount << " minimax calls (" << leafCount << " leafs) taking " << duration.count() << " seconds \n";
         std::cout << "Average call length: " << 1e6 * duration.count() / callCount << " µs\n\n";
         state = newState;
         //checkFunctionEmptyNeighbors(state);
