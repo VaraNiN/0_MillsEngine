@@ -43,7 +43,8 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, Bo
             std::chrono::duration<double> duration = end - start;
 
             std::cout << "There were " << callCount << " minimax calls (" << leafCount << " leafs) taking " << duration.count() << " seconds \n";
-            std::cout << "Average call length: " << 1e6 * duration.count() / callCount << " µs\n\n";
+            std::cout << "Average call length: " << 1e6 * duration.count() / callCount << " µs\n";
+            std::cout << "The current evaluation is: " << eval << "\n\n";
 
             checkValidity(newState);
             state = newState;

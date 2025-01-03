@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <algorithm> 
+#include <utility>
 
 GameInfo gameInfo;
 EvaluationWeights evalWeights;
@@ -476,8 +477,8 @@ float evaluate(const BoardState& state) {
 
     // Check if a playes has won (~5% of time)
     int isTerminal = isTerminalNode(state);
-    if (isTerminal != 0) {
-        return 9001. * isTerminal;
+    if (isTerminal != 0 || state.isFlyingPhaseWhite || state.isFlyingPhaseBlack) {    // Severely simplify evaluation function on the endgame to cope with huge search space
+        return 9001. * isTerminal + state.whitePieces.count() - state.blackPieces.count();
     }
 
 
@@ -494,12 +495,9 @@ float evaluate(const BoardState& state) {
     score += (millNumbersDouble.white - millNumbersDouble.black) * evalWeights.double_mill;
 
 
-    // Modify score based on mobility of the pieces (not important if any player has flying phase)
-    // Is important for the future game however if it's still early game
-    if (!state.isFlyingPhaseWhite & !state.isFlyingPhaseBlack) {    // ~15% of time
-        Colours possibleMoves = getPossibleMidGameMoveNumbers(state);
-        score += (possibleMoves.white - possibleMoves.black) * evalWeights.legal_moves;
-    }
+    // Modify score based on mobility of the pieces   // ~15% of time
+    Colours possibleMoves = getPossibleMidGameMoveNumbers(state);
+    score += (possibleMoves.white - possibleMoves.black) * evalWeights.legal_moves;
 
     return score;
 }
@@ -519,20 +517,36 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
     }
 
     if (depth == 0 || isTerminalNode(node) != 0) {
-        leafCount++;
+        leafCount++;    // These actually now basically never get hit unless the node is terminal, because we already save the child evals in the lookup table
         float eval = evaluate(node);
-        lookupTable[key] = {eval, depth};   // Maybe it would be smarter not to save this, because it's only a depth 0 evaluation at best. 
-                                            // Depends if the lookup or the evaluation of the state is faster.
-        return {eval, node};    // If it is a leaf node, return eval
+        lookupTable[key] = {eval, depth};
+        return {eval, node};
     }
 
     BoardState bestNode;
 
+    std::vector<BoardState> children = getChildren(node);
+    std::vector<std::pair<float, BoardState>> evaluatedChildren; // evaluation, child
+
+    for (const BoardState& child : children) {
+        std::bitset<50> childKey = generateKey(child);
+        float childEval;
+        if (lookupTable.find(childKey) != lookupTable.end()) {
+            childEval = lookupTable[childKey].first;
+        } else {
+            childEval = evaluate(child);    // Maybe one should somehow weight this, because static evaluations will have lower accuracy than lookups with depth
+            lookupTable[childKey] = {childEval, 0};
+        }
+        evaluatedChildren.push_back({childEval, child});
+    }
+
     if (maximizingPlayer) {
         float maxEval = -1e6;
-        std::vector<BoardState> children = getChildren(node);
-        for (const BoardState& child : children) {
-            auto [eval, _] = minimax(child, depth - 1, alpha, beta, false);
+        std::sort(evaluatedChildren.begin(), evaluatedChildren.end(), [](auto &left, auto &right) {
+            return left.first > right.first; //Maximizing player wants highest eval moves first
+        });  
+        for (const auto& [dummy1, child] : evaluatedChildren) {
+            auto [eval, dummy2] = minimax(child, depth - 1, alpha, beta, false);
             if (eval > maxEval) {
                 maxEval = eval;
                 bestNode = child;
@@ -545,9 +559,11 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
         return {maxEval, bestNode};
     } else {
         float minEval = 1e6;
-        std::vector<BoardState> children = getChildren(node);
-        for (const BoardState& child : children) {
-            auto [eval, _] = minimax(child, depth - 1, alpha, beta, true);
+        std::sort(evaluatedChildren.begin(), evaluatedChildren.end(), [](auto &left, auto &right) {
+            return left.first < right.first; //Minimizing player wants lowest eval moves first
+        });
+        for (const auto& [dummy1, child] : evaluatedChildren) {
+            auto [eval,dummy2] = minimax(child, depth - 1, alpha, beta, true);
             if (eval < minEval) {
                 minEval = eval;
                 bestNode = child;
