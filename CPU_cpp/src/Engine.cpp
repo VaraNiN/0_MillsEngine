@@ -73,7 +73,7 @@ void checkPhase(BoardState& state) {
     }
 }
 
-// for a given board state and move of current colour, returns a bool telling if that move formed a mill
+// for a given board state and position, returns a bool telling if that position is part of a mill
 bool checkMill(const BoardState& state, int pos) {
     const auto& pieces = state.isTurnWhite ? state.whitePieces : state.blackPieces;
     return (pieces & gameInfo.possibleMillsPerPosition[2 * pos]).count() == 3 || 
@@ -134,28 +134,50 @@ std::vector<BoardState> removePieces(const BoardState& state) {
     std::vector<BoardState> children;
     children.reserve(9);
     BoardState dummyState = state;
+    int legalPiecesToRemove = 0;
     for (int i = 0; i < 24; i++) {
         if (state.blackPieces[i] & state.isTurnWhite || state.whitePieces[i] & !state.isTurnWhite) {
-            if (state.isTurnWhite) {
-                dummyState.blackPieces.reset(i);
-            } else {
-                dummyState.whitePieces.reset(i);
+            if (!checkMill(state, i)) {
+                legalPiecesToRemove++;
+                if (state.isTurnWhite) {
+                    dummyState.blackPieces.reset(i);
+                } else {
+                    dummyState.whitePieces.reset(i);
+                }
+                dummyState.emptySpaces.set(i);
+                for (int neighbour : gameInfo.neighbors[i]) {
+                    dummyState.emptyNeighbors[neighbour].set(i);
+                }     
+                dummyState.isTurnWhite = !dummyState.isTurnWhite;
+                checkPhase(dummyState);
+                children.emplace_back(dummyState);
+                dummyState = state;
             }
-            dummyState.emptySpaces.set(i);
-            for (int neighbour : gameInfo.neighbors[i]) {
-                dummyState.emptyNeighbors[neighbour].reset(i);
-            }     
-            dummyState.isTurnWhite = !dummyState.isTurnWhite;
-            checkPhase(dummyState);
-            children.emplace_back(dummyState);
-            dummyState = state;
-            //dummyState.whitePieces = state.whitePieces;
-            //dummyState.blackPieces = state.blackPieces;
-            //dummyState.emptySpaces = state.emptySpaces;
-            //dummyState.emptyNeighbors = state.emptyNeighbors;
-            //dummyState.isTurnWhite ^= true;
+            
         }
     }
+
+    if (legalPiecesToRemove == 0) { // only if there are no other options are you allowed to remove pieces which are part of a mill
+        for (int i = 0; i < 24; i++) {
+            if (state.blackPieces[i] & state.isTurnWhite || state.whitePieces[i] & !state.isTurnWhite) {
+                legalPiecesToRemove++;
+                if (state.isTurnWhite) {
+                    dummyState.blackPieces.reset(i);
+                } else {
+                    dummyState.whitePieces.reset(i);
+                }
+                dummyState.emptySpaces.set(i);
+                for (int neighbour : gameInfo.neighbors[i]) {
+                    dummyState.emptyNeighbors[neighbour].set(i);
+                }     
+                dummyState.isTurnWhite = !dummyState.isTurnWhite;
+                checkPhase(dummyState);
+                children.emplace_back(dummyState);
+                dummyState = state;        
+            }
+        }
+    }
+
     return children;
 }
 

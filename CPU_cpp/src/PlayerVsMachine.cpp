@@ -62,9 +62,11 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
         // Check if game has ended
         int outcome = isTerminalNode(state);
         if (outcome == 1) {
+            show_position(state);
             print("White has won!");
             break;
         } else if (outcome == -1) {
+            show_position(state);
             print("Black has won!");
             break;
         } else if (currentPieces != previousPieces) {
@@ -72,6 +74,7 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
         } else {
             turnsWithoutCapture++;
             if (state.isFlyingPhaseWhite & state.isFlyingPhaseBlack & turnsWithoutCapture > 10 || turnsWithoutCapture > 50) {
+                show_position(state);
                 print("The game is a draw!");
                 break;
             }
