@@ -9,13 +9,14 @@
 #include <functional>
 
 void threadedMinimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::pair<float, BoardState>& result) {
-    result = minimax(node, depth, alpha, beta, maximizingPlayer);
+    result = minimax(node, depth, alpha, beta, maximizingPlayer, generateKey(node), 1e6, std::chrono::steady_clock::now());
 }
 
 
 std::pair<float, BoardState> iterativeDeepening(const BoardState& state, float timeLimit, int maxDepth) {
     float bestEval = 0;
     float eval = 0;
+    BoardState currentState;
     BoardState bestState = state;
 
     if (state.isPlayerWhite) {
@@ -24,24 +25,27 @@ std::pair<float, BoardState> iterativeDeepening(const BoardState& state, float t
         bestEval = 1e6;
     }
 
-    minimaxStart = std::chrono::steady_clock::now();
+    auto start = std::chrono::steady_clock::now();
+    auto currentTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsedSeconds;
 
     for (int depth = 1; depth < maxDepth; depth++) {
-        auto currentTime = std::chrono::steady_clock::now();
-        std::chrono::duration<double> elapsedSeconds = currentTime - minimaxStart;
+        
+        std::tie(eval, currentState) = minimax(state, depth, -10000, 10000, !state.isPlayerWhite, generateKey(state), timeLimit, start);
+        currentTime = std::chrono::steady_clock::now();
+        elapsedSeconds = currentTime - start;
 
-        BoardState currentState;
-        std::tie(eval, currentState) = minimax(state, depth, -10000, 10000, !state.isPlayerWhite, generateKey(state), timeLimit);
-
-        if (elapsedSeconds.count() >= timeLimit) {
+        if (elapsedSeconds.count() >= timeLimit * 0.5) {    // it won't finish the larget iteration yet in half the remaining time
             std::cout << "Time limit exceeded. Aborting search." << std::endl;
             break;
+        } else {
+            bestEval = eval;
+            bestState = currentState;
+            currentTime = std::chrono::steady_clock::now();
+            elapsedSeconds = currentTime - start;
+            std::cout << "Time: " << elapsedSeconds.count() << ", Depth: " << depth << ", Eval: " << eval << std::endl;
         }
 
-        bestEval = eval;
-        bestState = currentState;
-    
-        std::cout << "Depth: " << depth << ", Eval: " << eval << std::endl;
     }
 
     return {bestEval, bestState};
@@ -59,8 +63,10 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
         int outcome = isTerminalNode(state);
         if (outcome == 1) {
             print("White has won!");
+            break;
         } else if (outcome == -1) {
             print("Black has won!");
+            break;
         } else if (currentPieces != previousPieces) {
             turnsWithoutCapture = 0;
         } else {
@@ -78,14 +84,14 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
             playerMove(state, history);
         } else {
             callCount = 0;
-            leafCount = 0;
+            //leafCount = 0;
             float eval;
             BoardState newState;
 
             auto start = std::chrono::high_resolution_clock::now();
 
             if (multiThreading) {   // Multi-Threading really goes against the alpha beta pruning and, at least naively implemented like here, is not worth it :(
-                std::vector<BoardState> children = getChildren(state);
+/*                 std::vector<BoardState> children = getChildren(state);
                 std::vector<std::thread> threads;
                 std::vector<std::pair<float, BoardState>> results(children.size());
 
@@ -113,7 +119,7 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
                             newState = children[i];
                         }
                     } 
-                }
+                } */
             } else {
                 //std::tie(eval, newState) = minimax(state, 5, -10000, 10000, !state.isPlayerWhite);
                 std::tie(eval, newState) = iterativeDeepening(state, maxComputationTime, maxCallDepth);
@@ -124,7 +130,8 @@ void playGame(bool isPlayerWhite, float maxComputationTime, int maxCallDepth, bo
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> duration = end - start;
 
-            std::cout << "There were " << callCount << " minimax calls (" << leafCount << " leafs) taking " << duration.count() << " seconds \n";
+            //std::cout << "There were " << callCount << " minimax calls (" << leafCount << " leafs) taking " << duration.count() << " seconds \n";
+            std::cout << "There were " << callCount << " minimax calls taking " << duration.count() << " seconds \n";
             std::cout << "Average call length: " << 1e6 * duration.count() / callCount << " µs\n";
             std::cout << "The current evaluation is: " << eval << "\n\n";
 

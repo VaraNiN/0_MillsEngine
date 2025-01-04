@@ -192,9 +192,9 @@ extern GameInfo gameInfo;
 struct EvaluationWeights {
     inline static const float corner = 1.0;
     inline static const float three_cross = 1.1;
-    inline static const float four_cross = 1.2;
-    inline static const float open_mill = 0.4;
-    inline static const float closed_mill = 0.2;
+    inline static const float four_cross = 1.3;
+    inline static const float open_mill = 0.2;
+    inline static const float closed_mill = 0.1;
     inline static const float double_mill = 0.5;
     inline static const float legal_moves = 0.1;
 };
@@ -252,10 +252,8 @@ float evaluate(const BoardState& state);
 
 extern int callCount;
 
-extern int leafCount;
+// extern int leafCount;
 
-extern std::chrono::steady_clock::time_point minimaxStart;
-
-std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::bitset<50> parentKey = std::bitset<50>(), float maximumSearchTime = 1e6);
+std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::bitset<50> parentKey, float maximumSearchTime, std::chrono::steady_clock::time_point startTime);
 
 #endif // ENGINE_H

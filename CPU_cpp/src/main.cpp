@@ -9,6 +9,24 @@
 
 int main() {
 
+    /* BoardState state;
+    History history;
+    print(inputAdd(state, history));
+    print(inputAdd(state, history));
+    print(inputAdd(state, history));
+    print(inputAdd(state, history));
+    print(inputAdd(state, history));
+
+    print(countOpenMill(state).white);
+    print(countOpenMill(state).black);
+    exit(0);
+
+    auto children = getChildren(state);
+    for (auto child : children) {
+        show_position(child);
+    }
+    return 0; */
+
     playGame(true);
     return 0;
 

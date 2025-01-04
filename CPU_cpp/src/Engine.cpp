@@ -113,6 +113,7 @@ Colours countOpenMill(const BoardState& state) {
 }
 
 // for a given board state count the number of double mills for both colours which are not blocked
+// TODO: Fix this, not all double mills are in double mill
 Colours countDoubleMill(const BoardState& state) {
     Colours result;
 
@@ -167,10 +168,10 @@ std::vector<BoardState> getChildren(const BoardState& state) {
     children.reserve(9);
     BoardState dummyState = state;
 
-    if (state.isPlacingPhase) {
+    if (dummyState.isPlacingPhase) {
         for (int i = 0; i < 24; i++) {
-            if (state.emptySpaces[i]) {
-                if (state.isTurnWhite) {
+            if (dummyState.emptySpaces[i]) {
+                if (dummyState.isTurnWhite) {
                     dummyState.whitePieces.set(i);
                 } else {
                     dummyState.blackPieces.set(i);
@@ -181,7 +182,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                     dummyState.emptyNeighbors[neighbour].reset(i);
                 }
                 
-                if (checkMill(state, i)) {
+                if (checkMill(dummyState, i)) {
                     removedChildren = removePieces(dummyState);
                     children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                 } else {
@@ -198,11 +199,11 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                 //dummyState.isTurnWhite ^= true;
             }
         }
-    } else if (state.isTurnWhite & state.isFlyingPhaseWhite) {
+    } else if (dummyState.isTurnWhite & dummyState.isFlyingPhaseWhite) {
         for (int i = 0; i < 24; i++) {
-            if (state.whitePieces[i]) {
+            if (dummyState.whitePieces[i]) {
                 for (int j = 0; j < 24; j++) {
-                    if (state.emptySpaces[j]) {
+                    if (dummyState.emptySpaces[j]) {
                         dummyState.whitePieces.reset(i);
                         dummyState.whitePieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -216,7 +217,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }        
 
-                        if (checkMill(state, j)) {
+                        if (checkMill(dummyState, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         } else {
@@ -236,11 +237,11 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                 }
             }
         }
-    } else if (!state.isTurnWhite & state.isFlyingPhaseBlack) {
+    } else if (!dummyState.isTurnWhite & dummyState.isFlyingPhaseBlack) {
         for (int i = 0; i < 24; i++) {
-            if (state.blackPieces[i]) {
+            if (dummyState.blackPieces[i]) {
                 for (int j = 0; j < 24; j++) {
-                    if (state.emptySpaces[j]) {
+                    if (dummyState.emptySpaces[j]) {
                         dummyState.blackPieces.reset(i);
                         dummyState.blackPieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -254,7 +255,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }           
 
-                        if (checkMill(state, j)) {
+                        if (checkMill(dummyState, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         } else {
@@ -274,11 +275,11 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                 }
             }
         }
-    } else if (state.isTurnWhite) {
+    } else if (dummyState.isTurnWhite) {
         for (int i = 0; i < 24; i++) {
-            if (state.whitePieces[i]) {
+            if (dummyState.whitePieces[i]) {
                 for (int j = 0; j < 24; j++) {
-                    if (state.emptyNeighbors[i][j]) {
+                    if (dummyState.emptyNeighbors[i][j]) {
                         dummyState.whitePieces.reset(i);
                         dummyState.whitePieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -291,7 +292,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }  
 
-                        if (checkMill(state, j)) {
+                        if (checkMill(dummyState, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         }  else {
@@ -313,9 +314,9 @@ std::vector<BoardState> getChildren(const BoardState& state) {
         }
     } else {
         for (int i = 0; i < 24; i++) {
-            if (state.blackPieces[i]) {
+            if (dummyState.blackPieces[i]) {
                 for (int j = 0; j < 24; j++) {
-                    if (state.emptyNeighbors[i][j]) {
+                    if (dummyState.emptyNeighbors[i][j]) {
                         dummyState.blackPieces.reset(i);
                         dummyState.blackPieces.set(j);
                         dummyState.emptySpaces.set(i);
@@ -328,7 +329,7 @@ std::vector<BoardState> getChildren(const BoardState& state) {
                             dummyState.emptyNeighbors[neighbour].reset(j);
                         }  
 
-                        if (checkMill(state, j)) {
+                        if (checkMill(dummyState, j)) {
                             removedChildren = removePieces(dummyState);
                             children.insert(children.end(), removedChildren.begin(), removedChildren.end());
                         }  else {
@@ -480,6 +481,7 @@ float evaluate(const BoardState& state) {
 
     // Check if a playes has won (~5% of time)
     int isTerminal = isTerminalNode(state);
+    //return 9001. * isTerminal + state.whitePieces.count() - state.blackPieces.count();
     if (isTerminal != 0 || state.isFlyingPhaseWhite || state.isFlyingPhaseBlack) {    // Severely simplify evaluation function on the endgame to cope with huge search space
         return 9001. * isTerminal + state.whitePieces.count() - state.blackPieces.count();
     }
@@ -488,14 +490,19 @@ float evaluate(const BoardState& state) {
     // Modify score based on material and position (~15% of time)
     float score = scoreFromMaterial(state);
 
+    /* if (state.isPlacingPhase) {     // Don't put full evaluation in the early game to save time
+        return score;
+    } */
 
     // Modify score based on (possible) mills in the position
-    Colours millNumbersClosed = countMill(state); // ~15% of time
-    score += (millNumbersClosed.white - millNumbersClosed.black) * evalWeights.closed_mill;
     Colours millNumbersOpen = countOpenMill(state); // ~25% of time
     score += (millNumbersOpen.white - millNumbersOpen.black) * evalWeights.open_mill;
-    Colours millNumbersDouble = countDoubleMill(state); // ~25% of time
-    score += (millNumbersDouble.white - millNumbersDouble.black) * evalWeights.double_mill;
+    // Counting closed mills probably only wastes time
+    /* Colours millNumbersClosed = countMill(state); // ~15% of time
+    score += (millNumbersClosed.white - millNumbersClosed.black) * evalWeights.closed_mill; */
+    // TODO: Fix DoubleMills
+    /* Colours millNumbersDouble = countDoubleMill(state); // ~25% of time
+    score += (millNumbersDouble.white - millNumbersDouble.black) * evalWeights.double_mill; */
 
 
     // Modify score based on mobility of the pieces   // ~15% of time
@@ -506,19 +513,18 @@ float evaluate(const BoardState& state) {
 }
 
 int callCount = 0;
-int leafCount = 0;
-std::chrono::steady_clock::time_point minimaxStart = std::chrono::steady_clock::now();
+//int leafCount = 0;
 
 std::unordered_map<std::bitset<50>, std::pair<float, int>> lookupTable;
 std::mutex lookupTableMutex;
 
 
-std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::bitset<50> parentKey, float maximumSearchTime) {   
+std::pair<float, BoardState> minimax(const BoardState& node, int depth, float alpha, float beta, bool maximizingPlayer, std::bitset<50> parentKey, float maximumSearchTime, std::chrono::steady_clock::time_point startTime) {   
     callCount++;
     auto currentTime = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsedSeconds = currentTime - minimaxStart;
+    std::chrono::duration<double> elapsedSeconds = currentTime - startTime;
     if (elapsedSeconds.count() > maximumSearchTime) {
-        return {0., BoardState()};
+        return {-1337., BoardState()};  //If this evaluation ever actually shows up somewher, something has gone terribly wrong!
     }
 
     std::bitset<50> key = generateKey(node);
@@ -531,7 +537,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
     }
 
     if (depth == 0 || isTerminalNode(node) != 0) {
-        leafCount++;
+        //leafCount++;  // These now basically never get hit because of the lookup table
         float eval = evaluate(node);
         {
             std::lock_guard<std::mutex> guard(lookupTableMutex);
@@ -566,7 +572,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             return left.first > right.first; //Maximizing player wants highest eval moves first
         });  
         for (const auto& [dummy1, child] : evaluatedChildren) {
-            auto [eval, dummy2] = minimax(child, depth - 1, alpha, beta, false, parentKey, maximumSearchTime);
+            auto [eval, dummy2] = minimax(child, depth - 1, alpha, beta, false, parentKey, maximumSearchTime, startTime);
             if (eval > maxEval) {
                 maxEval = eval;
                 bestNode = child;
@@ -586,7 +592,7 @@ std::pair<float, BoardState> minimax(const BoardState& node, int depth, float al
             return left.first < right.first; //Minimizing player wants lowest eval moves first
         });
         for (const auto& [dummy1, child] : evaluatedChildren) {
-            auto [eval,dummy2] = minimax(child, depth - 1, alpha, beta, true, parentKey, maximumSearchTime);
+            auto [eval,dummy2] = minimax(child, depth - 1, alpha, beta, true, parentKey, maximumSearchTime, startTime);
             if (eval < minEval) {
                 minEval = eval;
                 bestNode = child;
